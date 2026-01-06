@@ -6,13 +6,13 @@
 
 void afficherEtatCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     effacerEcran();
-    printf("==================================================\n");
-    printf("   VOUS          vs      %s\n", ennemi->nom);
-    printf("   Coque: %d/%d      |   Coque: %d/%d\n", 
-            joueur->coque, joueur->coqueMax, ennemi->coque, ennemi->coqueMax);
-    printf("   Bouclier: %d/%d   |   Bouclier: %d/%d\n", 
-            joueur->bouclier, joueur->bouclierMax, ennemi->bouclier, ennemi->bouclierMax);
-    printf("==================================================\n");
+    printf(COLOR_CYAN "╔══════════════════════════════════════════════════╗\n");
+    printf("║" COLOR_RESET "   VOUS          " COLOR_YELLOW "vs" COLOR_RESET "      %-20s" COLOR_CYAN "║\n", ennemi->nom);
+    printf("║" COLOR_RESET "   Coque: " COLOR_RED "%-7d" COLOR_RESET " |   Coque: " COLOR_RED "%-15d" COLOR_CYAN "║\n", 
+            joueur->coque, ennemi->coque);
+    printf("║" COLOR_RESET "   Shield: " COLOR_CYAN "%-6d" COLOR_RESET " |   Shield: " COLOR_CYAN "%-14d" COLOR_CYAN "║\n", 
+            joueur->bouclier, ennemi->bouclier);
+    printf("╚══════════════════════════════════════════════════╝" COLOR_RESET "\n");
 }
 
 void lancerCombat(Vaisseau *joueur) {
@@ -26,12 +26,10 @@ void lancerCombat(Vaisseau *joueur) {
 
     if (joueur->coque > 0) {
         int gain = (rand() % 20) + 15;
-        if (strcmp(ennemi.nom, "CAPITAL SHIP REBELLE") == 0) {
-            gain += 50; 
-            joueur->missiles += 5; 
-            printf("Incroyable ! Vous avez pille les reserves du Capital Ship.\n");
-        }
+        printf(COLOR_GREEN "\nVICTOIRE ! " COLOR_RESET "Vous recuperez " COLOR_YELLOW "%d Ferraille" COLOR_RESET ".\n", gain);
         joueur->ferraille += gain;
+    } else {
+        printf(COLOR_RED "\n[DETRUITE] Votre vaisseau se desintegre dans le vide...\n" COLOR_RESET);
     }
     SLEEP_MS(2000);
 }
@@ -62,16 +60,22 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         } else {
             if (choixArme == 2 && joueur->missiles > 0) {
                 joueur->missiles--;
-                ennemi->coque -= 3;
-                printf("\nMISSILE : Impact direct sur la coque (-3) !\n");
+
+                int degatsFinaux = calculerDegats(3 + (joueur->distanceParcourue / 5), joueur->moteurs);
+                ennemi->coque -= degatsFinaux;
+
+
+                printf("\nMISSILE : Impact direct sur la coque (" COLOR_RED "-%d" COLOR_RESET") !\n", degatsFinaux);
             } else {
+                int degatsFinaux = calculerDegats(joueur->armes, joueur->moteurs);
+
                 if (ennemi->bouclier > 0) {
-                    ennemi->bouclier -= joueur->armes;
+                    ennemi->bouclier -= degatsFinaux;
                     if (ennemi->bouclier < 0) ennemi->bouclier = 0;
-                    printf("\nLASER : Le bouclier ennemi absorbe le choc.\n");
+                    printf(COLOR_CYAN "\nLASER : Le bouclier ennemi absorbe le choc. (" COLOR_RED "-%d" COLOR_CYAN ")\n" COLOR_RESET, degatsFinaux);
                 } else {
-                    ennemi->coque -= joueur->armes;
-                    printf("\nLASER : Impact sur la coque (-%d) !\n", joueur->armes);
+                    ennemi->coque -= degatsFinaux;
+                    printf("\nLASER : Impact sur la coque (" COLOR_RED "-%d" COLOR_RESET") !\n", degatsFinaux);
                 }
             }
         }
@@ -88,7 +92,7 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         if (joueur->bouclier > joueur->bouclierMax) {
             joueur->bouclier = joueur->bouclierMax;
         }
-        printf("\n[MANOEUVRE] Vous deviez l'energie aux boucliers (+%d) !\n", regen);
+        printf("\n[MANOEUVRE] Vous deviez l'energie aux boucliers (" COLOR_CYAN "+%d" COLOR_RESET ") !\n", regen);
     }
 
     SLEEP_MS(1500);
@@ -103,16 +107,18 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         } else {
             if (ennemi->missiles > 0 && joueur->bouclier > 0) {
                 printf("\nL'ENNEMI LANCE UN MISSILE !");
-                joueur->coque -= 3;
+                int degatsFinaux = calculerDegats(3 + (ennemi->distanceParcourue / 5), ennemi->moteurs);
+                joueur->coque -= degatsFinaux;
                 ennemi->missiles--;
             } else {
+                int degatsFinaux = calculerDegats(ennemi->armes, ennemi->moteurs);
                 if (joueur->bouclier > 0) {
-                    joueur->bouclier -= ennemi->armes;
+                    joueur->bouclier -= degatsFinaux;
                     if (joueur->bouclier < 0) joueur->bouclier = 0;
-                    printf("\nVotre bouclier encaisse l'attaque !\n");
+                    printf(COLOR_CYAN"\nVotre bouclier encaisse l'attaque ! (" COLOR_RED "-%d" COLOR_CYAN")\n" COLOR_RESET, degatsFinaux);
                 } else {
-                    joueur->coque -= ennemi->armes;
-                    printf("\nALERTE ! Votre coque est touchee (-%d) !\n", ennemi->armes);
+                    joueur->coque -= degatsFinaux;
+                    printf("\nALERTE ! Votre coque est touchee (" COLOR_RED "-%d" COLOR_RESET") !\n", degatsFinaux);
                 }
             }
         }
@@ -163,7 +169,7 @@ Vaisseau genererEnnemi(int secteur) {
     
     if (secteur >= 10 && chanceCapital < 25) { // 25% de chance
         strcpy(ennemi.nom, "CAPITAL SHIP REBELLE");
-        printf("\n[ALERTE] Un Capital Ship est sorti de l'hyperespace !\n");
+        printf(COLOR_RED "\n[ALERTE] SIGNATURE MASSIVE : %s détecté !" COLOR_RESET "\n", ennemi.nom);
         ennemi.coqueMax = 35 + secteur;
         ennemi.armes = 3 + (secteur / 5);
         ennemi.bouclierMax = 3;
@@ -179,7 +185,7 @@ Vaisseau genererEnnemi(int secteur) {
         ennemi.bouclierMax = 0 + (secteur / 5);
         ennemi.moteurs = 2 + (secteur / 5);
         printf("\n[SCAN] Contact visuel : %s", ennemi.nom);
-        printf("\n[SCAN] Type : ECLAIREUR (Faible coque, rapide)\n");
+        printf("\n[SCAN] Type : " COLOR_RED "ECLAIREUR" COLOR_RESET " (Faible coque, rapide)\n");
     } 
     else if (type == 1) { // Chasseur (Équilibré)
         ennemi.coqueMax = 10 + secteur;
@@ -187,14 +193,14 @@ Vaisseau genererEnnemi(int secteur) {
         ennemi.bouclierMax = 1 + (secteur / 4);
         ennemi.missiles = (secteur > 3) ? 1 : 0; // Les chasseurs ont des missiles après le secteur 3
         printf("\n[SCAN] Contact visuel : %s", ennemi.nom);
-        printf("\n[SCAN] Type : CHASSEUR (Equilibre)\n");
+        printf("\n[SCAN] Type : " COLOR_RED "CHASSEUR" COLOR_RESET " (Equilibre)\n");
     } 
     else { // Croiseur (Lourd et blindé)
         ennemi.coqueMax = 15 + secteur;
         ennemi.armes = 1 + (secteur / 5);
         ennemi.bouclierMax = 2 + (secteur / 4);
         printf("\n[SCAN] Contact visuel : %s", ennemi.nom);
-        printf("\n[SCAN] Type : CROISEUR (Blindage lourd)\n");
+        printf("\n[SCAN] Type : " COLOR_RED "CROISEUR" COLOR_RESET " (Blindage lourd)\n");
     }
 
     ennemi.coque = ennemi.coqueMax;
@@ -215,10 +221,10 @@ Vaisseau genererBossFinal() {
     boss.armes = 4;
     boss.missiles = 10;
     
-    printf("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    printf("!!! ALERTE : SIGNATURE MASSIVE DETECTEE !!!\n");
-    printf("!!!      LE VAISSEAU MERE EST ICI        !!!\n");
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+printf(COLOR_RED "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    printf("!!! " COLOR_YELLOW "ALERTE : SIGNATURE MASSIVE DETECTEE" COLOR_RED " !!!\n");
+    printf("!!!      " COLOR_BOLD "LE VAISSEAU MERE EST ICI" COLOR_RESET COLOR_RED "        !!!\n");
+    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" COLOR_RESET "\n");
     
     return boss;
 }

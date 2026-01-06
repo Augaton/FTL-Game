@@ -9,5 +9,6 @@ bool checkEsquive(int chanceEsquive, Vaisseau *joueur);
 void rechargerBoucliers(Vaisseau *v);
 Vaisseau genererEnnemi(int secteur);
 Vaisseau genererBossFinal();
+int calculerDegats(int puissanceArme, int niveauMoteur);
 
 #endif

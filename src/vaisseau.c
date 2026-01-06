@@ -9,7 +9,7 @@ void afficherVaisseau(Vaisseau *v) {
     printf("╚══════════════════════════════════════════════════════════╝" COLOR_RESET "\n\n");
 
     printf(COLOR_BOLD "--- SYSTEMES OFFENSIFS ---" COLOR_RESET "\n");
-    printf(" [LASERS]  Niveau %d (Dégâts : %d)\n", v->armes - 1, v->armes);
+    printf(" [LASERS]  Niveau %d (Dégâts : %d | Critique : %d%%)\n", v->armes - 1, v->armes, 10 + (v->moteurs * 2));
     printf(" [MISSILES] %d ogives en réserve\n\n", v->missiles);
 
     printf(COLOR_BOLD "--- SYSTEMES DE DEFENSE ---" COLOR_RESET "\n");
