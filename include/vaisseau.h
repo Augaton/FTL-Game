@@ -2,7 +2,7 @@
 #define VAISSEAU_H
 
 typedef struct {
-    char nom[30]; // On ajoute de la place pour le nom
+    char nom[30];
     int coque;
     int coqueMax;
     int bouclier;
@@ -12,6 +12,7 @@ typedef struct {
     int ferraille;
     int carburant;
     int distanceParcourue;
+    int moteurs; 
 } Vaisseau;
 
 #endif

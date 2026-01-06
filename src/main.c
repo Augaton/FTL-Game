@@ -24,7 +24,8 @@ int main() {
         3,   // missiles
         20,  // ferraille
         10,  // carburant
-        0    // distanceParcourue
+        0,    // distanceParcourue
+        0   // moteurs
     };
 
     printf("--- INITIALISATION DU SYSTEME ---\n");

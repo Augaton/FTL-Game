@@ -5,7 +5,7 @@
 
 void lancerCombat(Vaisseau *joueur);
 void tourCombat(Vaisseau *joueur, Vaisseau *ennemi);
-bool checkEsquive(int chanceEsquive);
+bool checkEsquive(int chanceEsquive, Vaisseau *joueur);
 void rechargerBoucliers(Vaisseau *v);
 Vaisseau genererEnnemi(int secteur);
 Vaisseau genererBossFinal();

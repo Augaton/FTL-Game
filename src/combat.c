@@ -57,7 +57,7 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         printf("\nFeu !");
         SLEEP_MS(600);
 
-        if (checkEsquive(15)) {
+        if (checkEsquive(15, joueur)) {
             printf("\nL'ennemi a esquive votre tir !\n");
         } else {
             if (choixArme == 2 && joueur->missiles > 0) {
@@ -97,8 +97,8 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     if (ennemi->coque > 0) {
         printf("\nL'ennemi riposte...");
         SLEEP_MS(800);
-        
-        if (checkEsquive(10)) {
+
+        if (checkEsquive(10, joueur)) {
             printf("\nESQUIVE ! Le tir ennemi vous manque.\n");
         } else {
             if (ennemi->missiles > 0 && joueur->bouclier > 0) {
@@ -120,8 +120,13 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     }
 }
 
-bool checkEsquive(int chanceEsquive) {
-    return (rand() % 100) < chanceEsquive;
+bool checkEsquive(int chanceEsquive, Vaisseau *joueur) {
+    int chanceTotale = chanceEsquive + (joueur->moteurs * 5); // varible ChanceEsquive de base + 5% par niveau de moteur
+    if ((rand() % 100) < chanceTotale) {
+        printf("ESQUIVE ! Les moteurs ont permis d'eviter le tir.\n");
+        return true; // Le tir rate
+    }
+    return false; // Le tir touche
 }
 
 void rechargerBoucliers(Vaisseau *v) {
@@ -172,6 +177,7 @@ Vaisseau genererEnnemi(int secteur) {
         ennemi.coqueMax = 6 + secteur;
         ennemi.armes = 1 + (secteur / 4);
         ennemi.bouclierMax = 0 + (secteur / 5);
+        ennemi.moteurs = 2 + (secteur / 5);
         printf("\n[SCAN] Contact visuel : %s", ennemi.nom);
         printf("\n[SCAN] Type : ECLAIREUR (Faible coque, rapide)\n");
     } 
@@ -179,6 +185,7 @@ Vaisseau genererEnnemi(int secteur) {
         ennemi.coqueMax = 10 + secteur;
         ennemi.armes = 1 + (secteur / 3);
         ennemi.bouclierMax = 1 + (secteur / 4);
+        ennemi.missiles = (secteur > 3) ? 1 : 0; // Les chasseurs ont des missiles après le secteur 3
         printf("\n[SCAN] Contact visuel : %s", ennemi.nom);
         printf("\n[SCAN] Type : CHASSEUR (Equilibre)\n");
     } 
