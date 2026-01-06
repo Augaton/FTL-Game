@@ -128,19 +128,39 @@ void afficherDestinationColoree(const char* destination) {
     printf("%s" COLOR_RESET, destination);
 }
 
-void descriptionSecteurVide() {
+void descriptionSecteurVide(Vaisseau *joueur) {
     char *ambiances[] = {
         "Le silence règne ici. Seules les étoiles lointaines illuminent le cockpit.",
         "Vous traversez un nuage de poussière cosmique scintillante. Magnifique mais désert.",
         "Les scanners sont calmes. Une planète géante gazeuse défile lentement sous vos pieds.",
-        "Quelques débris de roche flottent ici, vestiges d'une collision datant de millénaires.",
-        "Le vide spatial s'étend à l'infini. Aucun signal radar à 10 parsecs à la ronde.",
-        "Vous apercevez au loin une nébuleuse rougeoyante. L'endroit est d'un calme absolu.",
+        "Quelques débris de roche flottent ici, vestiges d'une collision millénaire.",
+        "Le vide spatial s'étend à l'infini. Aucun signal radar à la ronde.",
+        "Une nébuleuse rougeoyante illumine le secteur d'une lueur spectrale.",
         "Rien. Juste l'obscurité et le ronronnement rassurant de vos moteurs."
     };
-    int nbAmbiances = 7;
     
-    printf("\n" COLOR_CYAN "[INFO]" COLOR_RESET " %s\n", ambiances[rand() % nbAmbiances]);
+    printf("\n" COLOR_CYAN "[EXPLORATION]" COLOR_RESET " %s\n", ambiances[rand() % 7]);
+
+    // --- PETIT BONUS ALÉATOIRE (30% de chance) ---
+    int chance = rand() % 100;
+    if (chance < 30) {
+        SLEEP_MS(500);
+        int typeBonus = rand() % 3;
+        
+        printf(COLOR_YELLOW "💡 MOMENT DE CALME : " COLOR_RESET);
+        if (typeBonus == 0 && joueur->bouclier < joueur->bouclierMax) {
+            joueur->bouclier++;
+            printf("Votre équipage a recalibré les boucliers (+1).\n");
+        } 
+        else if (typeBonus == 1) {
+            int gain = (rand() % 3) + 1;
+            joueur->ferraille += gain;
+            printf("Vous avez récupéré %d ferraille dans les filtres à poussière du vaisseau.\n", gain);
+        }
+        else {
+            printf("L'équipage en profite pour se reposer. Le moral remonte.\n");
+        }
+    }
 }
 
 void executerEvenement(Vaisseau *joueur, const char* type) {
@@ -161,7 +181,7 @@ void executerEvenement(Vaisseau *joueur, const char* type) {
     } else if (strcmp(evenementFinal, "Signal de Detresse") == 0) {
         lancerEvenementAleatoire(joueur);
     } else {
-        descriptionSecteurVide();
+        descriptionSecteurVide(joueur);
         attendreJoueur();
     }
 }
