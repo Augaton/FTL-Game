@@ -6,12 +6,31 @@
 
 void afficherEtatCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     effacerEcran();
+    
+    // On définit des largeurs fixes pour chaque colonne
+    // Nom du joueur (15) + vs (4) + Nom ennemi (20) = 39 caractères de contenu
     printf(COLOR_CYAN "╔══════════════════════════════════════════════════╗\n");
-    printf("║" COLOR_RESET "   VOUS          " COLOR_YELLOW "vs" COLOR_RESET "      %-20s" COLOR_CYAN "║\n", ennemi->nom);
-    printf("║" COLOR_RESET "   Coque: " COLOR_RED "%-7d" COLOR_RESET " |   Coque: " COLOR_RED "%-15d" COLOR_CYAN "║\n", 
-            joueur->coque, ennemi->coque);
-    printf("║" COLOR_RESET "   Shield: " COLOR_CYAN "%-6d" COLOR_RESET " |   Shield: " COLOR_CYAN "%-14d" COLOR_CYAN "║\n", 
-            joueur->bouclier, ennemi->bouclier);
+    
+    // Ligne des Noms
+    printf("║ " COLOR_RESET "%-17s " COLOR_YELLOW "vs" COLOR_RESET "  %-26s " COLOR_CYAN "║\n", 
+           joueur->nom, ennemi->nom);
+    
+    // Ligne des Coques
+    char coqueJ[20], coqueE[20];
+    sprintf(coqueJ, "Coque: %d/%d", joueur->coque, joueur->coqueMax);
+    sprintf(coqueE, "Coque: %d/%d", ennemi->coque, ennemi->coqueMax);
+    
+    printf("║ " COLOR_RED "%-22s " COLOR_RESET "| " COLOR_RED "%-23s " COLOR_CYAN "║\n", 
+           coqueJ, coqueE);
+    
+    // Ligne des Boucliers
+    char shieldJ[20], shieldE[20];
+    sprintf(shieldJ, "Shield: %d/%d", joueur->bouclier, joueur->bouclierMax);
+    sprintf(shieldE, "Shield: %d/%d", ennemi->bouclier, ennemi->bouclierMax);
+    
+    printf("║ " COLOR_CYAN "%-22s " COLOR_RESET "| " COLOR_CYAN "%-23s " COLOR_CYAN "║\n", 
+           shieldJ, shieldE);
+    
     printf("╚══════════════════════════════════════════════════╝" COLOR_RESET "\n");
 }
 
