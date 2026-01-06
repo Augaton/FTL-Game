@@ -128,6 +128,21 @@ void afficherDestinationColoree(const char* destination) {
     printf("%s" COLOR_RESET, destination);
 }
 
+void descriptionSecteurVide() {
+    char *ambiances[] = {
+        "Le silence règne ici. Seules les étoiles lointaines illuminent le cockpit.",
+        "Vous traversez un nuage de poussière cosmique scintillante. Magnifique mais désert.",
+        "Les scanners sont calmes. Une planète géante gazeuse défile lentement sous vos pieds.",
+        "Quelques débris de roche flottent ici, vestiges d'une collision datant de millénaires.",
+        "Le vide spatial s'étend à l'infini. Aucun signal radar à 10 parsecs à la ronde.",
+        "Vous apercevez au loin une nébuleuse rougeoyante. L'endroit est d'un calme absolu.",
+        "Rien. Juste l'obscurité et le ronronnement rassurant de vos moteurs."
+    };
+    int nbAmbiances = 7;
+    
+    printf("\n" COLOR_CYAN "[INFO]" COLOR_RESET " %s\n", ambiances[rand() % nbAmbiances]);
+}
+
 void executerEvenement(Vaisseau *joueur, const char* type) {
     const char* evenementFinal = type;
 
@@ -146,7 +161,8 @@ void executerEvenement(Vaisseau *joueur, const char* type) {
     } else if (strcmp(evenementFinal, "Signal de Detresse") == 0) {
         lancerEvenementAleatoire(joueur);
     } else {
-        printf("\n[INFO] La zone est deserte.\n");
+        descriptionSecteurVide();
+        attendreJoueur();
     }
 }
 
@@ -185,6 +201,8 @@ void evenementDeresse(Vaisseau *joueur) {
     } else {
         printf("Vous passez votre chemin.\n");
     }
+
+    attendreJoueur();
 }
 
 void evenementEpaveDerivante(Vaisseau *joueur) {
@@ -209,6 +227,8 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
         printf("Le scan révèle quelques débris : +5 Ferraille.\n");
         joueur->ferraille += 5;
     }
+
+    attendreJoueur();
 }
 
 void evenementPluieAsteroides(Vaisseau *joueur) {
@@ -221,6 +241,8 @@ void evenementPluieAsteroides(Vaisseau *joueur) {
         printf(COLOR_RED "CHOC ! Un astéroïde percute le flanc gauche. Coque -3." COLOR_RESET "\n");
         joueur->coque -= 3;
     }
+
+    attendreJoueur();
 }
 
 void evenementAnomalieSpatiale(Vaisseau *joueur) {
@@ -263,6 +285,8 @@ void evenementAnomalieSpatiale(Vaisseau *joueur) {
         joueur->carburant = (joueur->carburant > 0) ? joueur->carburant - 1 : 0;
         printf("Dégâts structurels subis (-4 Coque) et perte d'une unité de carburant.\n");
     }
+
+    attendreJoueur();
 }
 
 void evenementCapsuleSurvie(Vaisseau *joueur) {
@@ -291,6 +315,8 @@ void evenementCapsuleSurvie(Vaisseau *joueur) {
         printf("Vous broyez la capsule : +5 Ferraille.\n");
         joueur->ferraille += 5;
     }
+
+    attendreJoueur();
 }
 
 void evenementMarchandAmbulant(Vaisseau *joueur) {
@@ -320,6 +346,8 @@ void evenementMarchandAmbulant(Vaisseau *joueur) {
     else {
         printf("Le marchand s'éloigne en maugréant.\n");
     }
+
+    attendreJoueur();
 }
 
 void evenementLoterie(Vaisseau *joueur) {
@@ -369,4 +397,6 @@ void evenementLoterie(Vaisseau *joueur) {
     } else {
         printf("Vous gardez votre argent pour des réparations plus urgentes.\n");
     }
+
+    attendreJoueur();
 }

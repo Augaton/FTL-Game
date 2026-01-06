@@ -1,82 +1,109 @@
 #include "magasin.h"
 #include "utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void ouvrirMagasin(Vaisseau *joueur) {
     int categorie = 0;
-    while (categorie != 4) { // 4 pour quitter le magasin
+    
+    // --- GÉNÉRATION DU STOCK ALÉATOIRE POUR CETTE STATION ---
+    int stockMissiles = (rand() % 4) + 2;     // 2 à 5 lots de missiles
+    int stockCarburant = (rand() % 6) + 5;    // 5 à 10 unités de carburant
+    int aVenduUpgrade = 0;                    // On ne peut acheter qu'une grosse amélioration par station
+
+    while (categorie != 4) {
         effacerEcran();
-        printf("--- STATION COMMERCIALE ---\n");
-        printf("Ferraille : %d | Coque : %d/%d | Missiles : %d\n", 
-                joueur->ferraille, joueur->coque, joueur->coqueMax, joueur->missiles);
-        printf("---------------------------\n");
-        printf("1. [MAINTENANCE] (Reparations & Munitions)\n");
-        printf("2. [UPGRADES]    (Armes, Boucliers, Moteurs)\n");
-        printf("3. [SERVICES]    (Vendre du carburant, ect...)\n");
-        printf("4. QUITTER\n");
-        printf("\nChoisir categorie : ");
-        scanf("%d", &categorie);
+        
+        // --- HEADER MAGASIN ---
+        printf(COLOR_GREEN "╔══════════════════════════════════════════════════════════╗\n");
+        printf("║ " COLOR_BOLD "🛒 DOCK COMMERCIAL" COLOR_RESET COLOR_GREEN "          CRÉDITS: " COLOR_YELLOW "%-5d ⚓" COLOR_GREEN " ║\n", joueur->ferraille);
+        printf("╠══════════════════════════════════════════════════════════╣" COLOR_RESET "\n");
+        printf(COLOR_GREEN "║ " COLOR_CYAN "1. [MAINTENANCE]" COLOR_RESET "  Réparations & Munitions            " COLOR_GREEN "║\n");
+        printf(COLOR_GREEN "║ " COLOR_RED "2. [UPGRADES]   " COLOR_RESET "  Systèmes du Vaisseau               " COLOR_GREEN "║\n");
+        printf(COLOR_GREEN "║ " COLOR_YELLOW "3. [SERVICES]   " COLOR_RESET "  Marché noir & Recyclage            " COLOR_GREEN "║\n");
+        printf(COLOR_GREEN "║ " COLOR_RESET "4. [QUITTER]    " COLOR_RESET "  Reprendre la navigation            " COLOR_GREEN "║\n");
+        printf(COLOR_GREEN "╚══════════════════════════════════════════════════════════╝" COLOR_RESET "\n");
+        
+        printf("\n " COLOR_BOLD "Choisir catégorie > " COLOR_RESET);
+        if (scanf("%d", &categorie) != 1) {
+            int c; while ((c = getchar()) != '\n' && c != EOF);
+            continue;
+        }
 
         if (categorie == 1) {
             // --- SOUS-MENU MAINTENANCE ---
             int choix = 0;
-            printf("\n-- MAINTENANCE --\n");
-            printf("1. Reparer Coque (+5)  - 10 Fer\n");
-            printf("2. Acheter Missiles (+3) - 15 Fer\n");
-            printf("3. Acheter Carburant (+?) - 5 Fer/Unités\n");
+            printf("\n" COLOR_CYAN "─── MAINTENANCE ───" COLOR_RESET "\n");
+            printf("1. Réparer Coque (+5)  | 10 Fer. | (Besoin: %d)\n", joueur->coqueMax - joueur->coque);
+            printf("2. Missiles (+3)       | 15 Fer. | Stock: %d\n", stockMissiles);
+            printf("3. Carburant (x1)      | 05 Fer. | Stock: %d\n", stockCarburant);
             printf("4. Retour\n");
+            printf("Choix : ");
             scanf("%d", &choix);
 
             if (choix == 1 && joueur->ferraille >= 10 && joueur->coque < joueur->coqueMax) {
                 joueur->ferraille -= 10;
                 joueur->coque = (joueur->coque + 5 > joueur->coqueMax) ? joueur->coqueMax : joueur->coque + 5;
-                printf("Reparation OK.\n");
-            } else if (choix == 2 && joueur->ferraille >= 15) {
+                printf(COLOR_GREEN "✔ Réparation effectuée.\n" COLOR_RESET);
+            } 
+            else if (choix == 2 && stockMissiles > 0 && joueur->ferraille >= 15) {
                 joueur->ferraille -= 15;
                 joueur->missiles += 3;
-                printf("Missiles recus.\n");
-            } else if (choix == 3) {
-                int quantite;
-                printf("Quantite de carburant a acheter : ");
-                scanf("%d", &quantite);
-                int coutTotal = quantite * 5;
-                if (joueur->ferraille >= coutTotal) {
-                    joueur->ferraille -= coutTotal;
-                    joueur->carburant += quantite;
-                    printf("Carburant ajoute.\n");
-                } else {
-                    printf("Fond insuffisants pour cette quantite.\n");
-                }
+                stockMissiles--;
+                printf(COLOR_GREEN "✔ Missiles chargés.\n" COLOR_RESET);
+            } 
+            else if (choix == 3 && stockCarburant > 0 && joueur->ferraille >= 5) {
+                joueur->ferraille -= 5;
+                joueur->carburant += 1;
+                stockCarburant--;
+                printf(COLOR_GREEN "✔ Carburant ajouté.\n" COLOR_RESET);
             }
+            else if (choix != 4) printf(COLOR_RED "✘ Action impossible (Fond/Stock/Max).\n" COLOR_RESET);
         } 
         else if (categorie == 2) {
             // --- SOUS-MENU UPGRADES ---
             int choix = 0;
-            printf("\n-- AMELIORATIONS --\n");
-            printf("1. Laser +1 (Actuel: %d)     - 40 Fer\n", joueur->armes);
-            printf("2. Bouclier +1 (Actuel: %d)  - 50 Fer\n", joueur->bouclierMax);
-            printf("3. Moteurs +1 (Esquive)      - 30 Fer\n");
+            printf("\n" COLOR_RED "─── AMÉLIORATIONS ───" COLOR_RESET "\n");
+            if (aVenduUpgrade) printf(COLOR_YELLOW "!! Une seule modification structurelle par escale !!\n" COLOR_RESET);
+            
+            printf("1. Laser +1 (Actuel: %-2d) | 40 Fer.\n", joueur->armes);
+            printf("2. Shield +1 (Max: %-2d)   | 50 Fer.\n", joueur->bouclierMax);
+            printf("3. Moteurs +1 (Esquive)    | 30 Fer.\n");
             printf("4. Retour\n");
+            printf("Choix : ");
             scanf("%d", &choix);
 
-            if (choix == 1 && joueur->ferraille >= 40) {
-                joueur->ferraille -= 40;
-                joueur->armes++;
-                printf("Puissance de feu augmentee !\n");
-            } else if (choix == 2 && joueur->ferraille >= 50) {
-                joueur->ferraille -= 50;
-                joueur->bouclierMax++;
-                printf("Generateur de bouclier ameliore !\n");
-            } else if (choix == 3 && joueur->ferraille >= 30) {
-                joueur->ferraille -= 30;
-                joueur->moteurs++;
-                printf("Moteurs pousses ! Esquive amelioree.\n");
-            }
+            if (!aVenduUpgrade) {
+                if (choix == 1 && joueur->ferraille >= 40) {
+                    joueur->ferraille -= 40; joueur->armes++; aVenduUpgrade = 1;
+                    printf(COLOR_GREEN "✔ Canons laser calibrés.\n" COLOR_RESET);
+                } else if (choix == 2 && joueur->ferraille >= 50) {
+                    joueur->ferraille -= 50; joueur->bouclierMax++; aVenduUpgrade = 1;
+                    printf(COLOR_GREEN "✔ Nouveau noyau de bouclier installé.\n" COLOR_RESET);
+                } else if (choix == 3 && joueur->ferraille >= 30) {
+                    joueur->ferraille -= 30; joueur->moteurs++; aVenduUpgrade = 1;
+                    printf(COLOR_GREEN "✔ Turbines optimisées.\n" COLOR_RESET);
+                }
+            } else if (choix != 4) printf(COLOR_RED "✘ Nos techniciens sont déjà occupés.\n" COLOR_RESET);
         }
         else if (categorie == 3) {
-             printf("\n[SERVICE] Aucune promotion disponible actuellement.\n");
-        }
+            // --- SOUS-MENU SERVICES ---
+            int choix = 0;
+            printf("\n" COLOR_YELLOW "─── SERVICES DU MARCHÉ NOIR ───" COLOR_RESET "\n");
+            printf("1. Vendre du Carburant (+4 Ferraille / Unité)\n");
+            printf("2. Retour\n");
+            printf("Choix : ");
+            scanf("%d", &choix);
 
-        SLEEP_MS(1000);
+            if (choix == 1) {
+                if (joueur->carburant > 0) {
+                    joueur->carburant--;
+                    joueur->ferraille += 4;
+                    printf(COLOR_GREEN "✔ Carburant vendu. +4 Ferraille.\n" COLOR_RESET);
+                } else printf(COLOR_RED "✘ Vous n'avez plus de carburant !\n" COLOR_RESET);
+            }
+        }
+        
+        if (categorie != 4) SLEEP_MS(1200);
     }
 }

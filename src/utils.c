@@ -57,3 +57,10 @@ void afficherVictoire(Vaisseau *joueur) {
     printf(" Secteurs parcourus: %d / 20\n", joueur->distanceParcourue);
     printf(" Fortune restante  : %d ferrailles\n", joueur->ferraille);
 }
+
+void attendreJoueur() {
+    printf(COLOR_CYAN "\n[ Appuyez sur ENTREE pour continuer ]" COLOR_RESET);
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF); // Nettoie le buffer
+    getchar(); // Attend la pression de Entrée
+}

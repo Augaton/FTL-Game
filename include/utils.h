@@ -28,5 +28,6 @@
 void effacerEcran();
 void afficherGameOver(Vaisseau *joueur);
 void afficherVictoire(Vaisseau *joueur);
+void attendreJoueur();
 
 #endif
