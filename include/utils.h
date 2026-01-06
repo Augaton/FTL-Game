@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "vaisseau.h"
+
 // Secteur final
 #define DISTANCE_FINALE 20
 
@@ -24,5 +26,7 @@
 
 // Fonction pour effacer l'écran (optionnel mais génial pour l'immersion)
 void effacerEcran();
+void afficherGameOver(Vaisseau *joueur);
+void afficherVictoire(Vaisseau *joueur);
 
 #endif
