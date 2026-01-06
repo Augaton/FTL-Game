@@ -3,7 +3,8 @@
 
 #include "vaisseau.h"
 
-void genererEvenement(Vaisseau *joueur);
+void executerEvenement(Vaisseau *joueur, const char *destination);
+const char* inspecterBalise();
 void evenementDeresse(Vaisseau *joueur);
 void menuVoyage(Vaisseau *joueur);
 

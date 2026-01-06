@@ -4,6 +4,7 @@
 #include "magasin.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void menuVoyage(Vaisseau *joueur) {
     int choix = 0;
@@ -24,34 +25,33 @@ void menuVoyage(Vaisseau *joueur) {
         scanf("%d", &choix);
 
         if (choix == 1) {
-            if (joueur->carburant > 0) {
-                joueur->carburant--;
-                joueur->distanceParcourue++;
+            const char* baliseA = inspecterBalise();
+            const char* baliseB = inspecterBalise();
+            int choixSaut;
 
-                // --- Système Balise ---
-                const char* baliseA = inspecterBalise();
-                const char* baliseB = inspecterBalise();
-                int choixSaut;
+            printf("\n--- CARTE STELLAIRE ---\n");
+            printf("1. %s\n", baliseA);
+            printf("2. %s\n", baliseB);
+            printf("Votre choix : ");
+            scanf("%d", &choixSaut);
 
-                printf("\n--- CAPTEURS LONGUE PORTEE ---\n");
-                printf("Deux balises detectees. Choisissez votre destination :\n");
-                printf("1. %s\n", baliseA);
-                printf("2. %s\n", baliseB);
-                printf("Votre choix : ");
-                scanf("%d", &choixSaut);
+            const char* destination = (choixSaut == 1) ? baliseA : baliseB;
 
-                if (choixSaut == 1) {
-                    executerEvenement(joueur, baliseA);
-                } else {
-                    executerEvenement(joueur, baliseB);
-                }
-                // ------------------------------------------
-                
+            if (strcmp(destination, "Nebuleuse (Inconnu - Gratuit)") == 0) {
+                printf("\n[ECONOMIE] Vous utilisez les courants de la nebuleuse (0 Carburant).\n");
             } else {
-                printf("\nERREUR : Plus de carburant !\n");
-                joueur->coque = 0;
-                SLEEP_MS(2000);
+                if (joueur->carburant > 0) {
+                    joueur->carburant--;
+                } else {
+                    printf("\n[ALERTE] Plus de carburant ! Coque endommagee par la derive.\n");
+                    joueur->coque -= 5;
+                }
             }
+
+            joueur->distanceParcourue++;
+            executerEvenement(joueur, destination);
+            
+            if (joueur->coque <= 0) break;
         }
         else if (choix == 2) {
             printf("\n--- STATISTIQUES AVANCEES ---\n");
@@ -70,24 +70,34 @@ void menuVoyage(Vaisseau *joueur) {
 
 const char* inspecterBalise() {
     int r = rand() % 100;
-    if (r < 35) return "Signal Hostile (Combat)";
-    if (r < 50) return "Station Commerciale (Magasin)";
+    if (r < 10) return "Nebuleuse (Inconnu - Gratuit)";
+    if (r < 40) return "Signal Hostile (Combat)";
+    if (r < 55) return "Station Commerciale (Magasin)";
     if (r < 80) return "Signal de Detresse";
     return "Secteur Vide";
 }
 
 void executerEvenement(Vaisseau *joueur, const char* type) {
-    if (strcmp(type, "Signal Hostile (Combat)") == 0) {
+    const char* evenementFinal = type;
+
+    if (strcmp(type, "Nebuleuse (Inconnu - Gratuit)") == 0) {
+        printf("\n[SYSTEME] Entree dans la nebuleuse. Capteurs brouilles...\n");
+        int r = rand() % 100;
+        if (r < 50) evenementFinal = "Signal Hostile (Combat)";
+        else if (r < 80) evenementFinal = "Signal de Detresse";
+        else evenementFinal = "Secteur Vide";
+    }
+
+    if (strcmp(evenementFinal, "Signal Hostile (Combat)") == 0) {
         lancerCombat(joueur);
-    } else if (strcmp(type, "Station Commerciale (Magasin)") == 0) {
+    } else if (strcmp(evenementFinal, "Station Commerciale (Magasin)") == 0) {
         ouvrirMagasin(joueur);
-    } else if (strcmp(type, "Signal de Detresse") == 0) {
+    } else if (strcmp(evenementFinal, "Signal de Detresse") == 0) {
         evenementDeresse(joueur);
     } else {
-        printf("\n[SAUT] Le secteur est calme. Rien a signaler.\n");
+        printf("\n[INFO] La zone est deserte.\n");
     }
 }
-
 void evenementDeresse(Vaisseau *joueur) {
     int choix;
     printf("\n[SIGNAL DE DETRESSE] Un transporteur civil est en panne.\n");
