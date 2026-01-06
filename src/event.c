@@ -140,7 +140,7 @@ void executerEvenement(Vaisseau *joueur, const char* type) {
 }
 
 void lancerEvenementAleatoire(Vaisseau *joueur) {
-    int typeEv = rand() % 6; // On définit 6 types d'événements
+    int typeEv = rand() % 7; // On définit 7 types d'événements
 
     switch(typeEv) {
         case 0: evenementMarchandAmbulant(joueur); break;
@@ -149,6 +149,7 @@ void lancerEvenementAleatoire(Vaisseau *joueur) {
         case 3: evenementCapsuleSurvie(joueur); break;
         case 4: evenementAnomalieSpatiale(joueur); break;
         case 5: evenementDeresse(joueur); break;
+        case 6: evenementLoterie(joueur); break;
     }
 }
 
@@ -307,5 +308,54 @@ void evenementMarchandAmbulant(Vaisseau *joueur) {
     }
     else {
         printf("Le marchand s'éloigne en maugréant.\n");
+    }
+}
+
+void evenementLoterie(Vaisseau *joueur) {
+    printf("\n" COLOR_MAGENTA "🎰 [CASINO SPATIAL]" COLOR_RESET " Une station de divertissement scintille au loin.\n");
+    printf("\"Approchez ! Tentez votre chance ! Doublez votre mise ou repartez les soutes vides !\"\n");
+    
+    if (joueur->ferraille < 10) {
+        printf("\nLe videur vous regarde de haut : \"Revenez quand vous aurez au moins 10 Ferrailles.\"\n");
+        return;
+    }
+
+    printf("\n1. Parier 10 Ferrailles (Gain : x2)\n");
+    printf("2. Parier 50 Ferrailles (Gain : x3 - Difficile)\n");
+    printf("3. Passer votre chemin\n");
+    printf("Votre choix : ");
+
+    int choix;
+    scanf("%d", &choix);
+
+    if (choix == 1) {
+        joueur->ferraille -= 10;
+        printf("\nLancement de la machine");
+        for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
+        
+        if ((rand() % 100) < 45) { // 45% de chance de gagner
+            printf(COLOR_GREEN " GAGNÉ ! +20 Ferrailles !" COLOR_RESET "\n");
+            joueur->ferraille += 20;
+        } else {
+            printf(COLOR_RED " PERDU... La machine encaisse vos jetons." COLOR_RESET "\n");
+        }
+    } 
+    else if (choix == 2) {
+        if (joueur->ferraille < 50) {
+            printf(COLOR_RED "Vous n'avez pas assez pour cette table !\n" COLOR_RESET);
+            return;
+        }
+        joueur->ferraille -= 50;
+        printf("\nLa roue de la fortune tourne");
+        for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(700); }
+
+        if ((rand() % 100) < 25) { // 25% de chance seulement (Gros lot)
+            printf(COLOR_YELLOW " JACKPOT !!! +150 Ferrailles !" COLOR_RESET "\n");
+            joueur->ferraille += 150;
+        } else {
+            printf(COLOR_RED " RIEN... Le casino gagne toujours à la fin." COLOR_RESET "\n");
+        }
+    } else {
+        printf("Vous gardez votre argent pour des réparations plus urgentes.\n");
     }
 }

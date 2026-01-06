@@ -16,6 +16,7 @@ void evenementEpaveDerivante(Vaisseau *joueur);
 void evenementPluieAsteroides(Vaisseau *joueur);
 void evenementCapsuleSurvie(Vaisseau *joueur);
 void evenementAnomalieSpatiale(Vaisseau *joueur);
+void evenementLoterie(Vaisseau *joueur);
 
 
 #endif
