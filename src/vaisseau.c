@@ -40,3 +40,12 @@ void afficherVaisseau(Vaisseau *v) {
     while ((c = getchar()) != '\n' && c != EOF); 
     getchar(); // Attente réelle de l'entrée
 }
+
+void afficherBarreFTL(int charge) {
+    printf("FTL [");
+    for(int i = 0; i < 3; i++) {
+        if (i < charge) printf(COLOR_YELLOW "#" COLOR_RESET);
+        else printf("-");
+    }
+    printf("] ");
+}

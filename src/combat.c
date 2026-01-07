@@ -11,10 +11,13 @@ void afficherEtatCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     // On définit des largeurs fixes pour chaque colonne
     // Nom du joueur (15) + vs (4) + Nom ennemi (20) = 39 caractères de contenu
     printf(COLOR_CYAN "╔══════════════════════════════════════════════════╗\n");
-    
-    // Ligne des Noms
-    printf("║ " COLOR_RESET "%-18s " COLOR_YELLOW "vs" COLOR_RESET "  %-25s " COLOR_CYAN "║\n", 
-           joueur->nom, ennemi->nom);
+
+    printf("║ " COLOR_RESET "%-15s " COLOR_YELLOW "vs" COLOR_RESET "  %-15s " COLOR_MAGENTA, 
+        joueur->nom, ennemi->nom);
+
+    afficherBarreFTL(ennemi->chargeFTL);
+
+    printf(COLOR_CYAN "   ║\n");
     
     // Ligne des Coques
     char coqueJ[20], coqueE[20];
@@ -92,6 +95,7 @@ void lancerCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         joueur->ennemiPresent = 0;
         joueur->ennemiCoqueActuelle = 0;
         sauvegarderPartie(joueur);
+        attendreJoueur();
     } else {
         printf(COLOR_RED "\n[CRITIQUE] Votre vaisseau se desintegre...\n" COLOR_RESET);
     }
@@ -105,7 +109,9 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     printf(COLOR_CYAN "\n--- VOTRE TOUR ---\n" COLOR_RESET);
     printf(COLOR_YELLOW "1. ATTAQUER\n" COLOR_RESET);
     printf(COLOR_BLUE "2. RECHARGER BOUCLIERS (Regen +2 a +4)" COLOR_RESET);
-    printf(COLOR_MAGENTA "\n3. TENTER LA FUITE (Charge FTL)" COLOR_RESET "\n");
+    printf(COLOR_MAGENTA "\n3. TENTER LA FUITE (");
+    afficherBarreFTL(joueur->chargeFTL);
+    printf( ")\n" COLOR_RESET);
     printf(COLOR_YELLOW "> " COLOR_RESET);
     scanf("%d", &choixAction);
 

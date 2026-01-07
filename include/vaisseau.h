@@ -36,5 +36,6 @@ typedef struct {
 } Vaisseau;
 
 void afficherVaisseau(Vaisseau *v);
+void afficherBarreFTL(int charge);
 
 #endif
