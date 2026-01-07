@@ -18,10 +18,9 @@ void menuVoyage(Vaisseau *joueur) {
         printf(COLOR_CYAN "╔══════════════════════════════════════════════════════════╗\n");
         printf("║ " COLOR_BOLD "%-18s" COLOR_RESET COLOR_CYAN "CONSOLE DE NAVIGATION   SECTEUR: %02d/%d ║\n", joueur->nom, joueur->distanceParcourue, joueur->distanceObjectif);
         printf("╠══════════════════════════════════════════════════════════╣" COLOR_RESET "\n");
+
         // --- SECTION ÉTAT ---
-        // int barres = (joueur->coque * 20) / joueur->coqueMax;
         printf(COLOR_CYAN "║ " COLOR_RESET "COQUE: ");
-        // ... (tes couleurs de coque) ...
         printf(COLOR_RESET " %02d/%02d  ", joueur->coque, joueur->coqueMax);
 
         printf(COLOR_CYAN "SHIELD: " COLOR_RESET);
@@ -113,7 +112,6 @@ void lancerSequenceDeSaut(Vaisseau *joueur) {
     joueur->distanceParcourue++;
 
     // --- SAUVEGARDE ---
-    // Maintenant, le fichier contient la nouvelle distance ET le secteurActuel
     sauvegarderPartie(joueur);
 
     // --- EXÉCUTION ---

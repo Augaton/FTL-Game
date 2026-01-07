@@ -32,6 +32,7 @@ typedef struct {
     // --- ÉTAT DU COMBAT (PERSISTANCE) ---
     int ennemiPresent;
     int ennemiCoqueActuelle;
+    int chargeFTL;
 } Vaisseau;
 
 void afficherVaisseau(Vaisseau *v);

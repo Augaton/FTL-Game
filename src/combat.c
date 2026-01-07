@@ -65,9 +65,19 @@ void lancerCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     // 3. ISSUE DU COMBAT
     if (joueur->coque > 0) {
         int gain = (rand() % 20) + 15;
+
+        // Si tuer pendant la fuite de l'ennemie, petit bonus
+        if (ennemi->chargeFTL > 0) {
+            int bonus = gain / 2; // +50% de bonus
+            gain += bonus;
+            printf(COLOR_MAGENTA "\n[INTERCEPTION] Réacteur FTL ennemi surchargé ! Explosion massive !" COLOR_RESET);
+            printf(COLOR_YELLOW "\nBonus de récupération : +%d Ferraille\n" COLOR_RESET, bonus);
+        }
+
         printf(COLOR_GREEN "\nVICTOIRE ! " COLOR_RESET "Le %s est detruit.\n", ennemi->nom);
         printf("Recuperation de " COLOR_YELLOW "%d Ferraille" COLOR_RESET ".\n", gain);
         joueur->ferraille += gain;
+        
 
         // --- SYSTEME DE LOOT D'EQUIPEMENT ---
         // 15% de chance de loot si l'ennemi a un meilleur rang
@@ -94,7 +104,8 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 
     printf(COLOR_CYAN "\n--- VOTRE TOUR ---\n" COLOR_RESET);
     printf(COLOR_YELLOW "1. ATTAQUER\n" COLOR_RESET);
-    printf(COLOR_BLUE "2. RECHARGER BOUCLIERS (Regen +2 a +4)\n" COLOR_RESET);
+    printf(COLOR_BLUE "2. RECHARGER BOUCLIERS (Regen +2 a +4)" COLOR_RESET);
+    printf(COLOR_MAGENTA "\n3. TENTER LA FUITE (Charge FTL)" COLOR_RESET "\n");
     printf(COLOR_YELLOW "> " COLOR_RESET);
     scanf("%d", &choixAction);
 
@@ -152,6 +163,18 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
         if (joueur->bouclierActuel > joueur->systemeBouclier.efficacite) joueur->bouclierActuel = joueur->systemeBouclier.efficacite;
         printf("\n[MANOEUVRE] Vous déviez l'énergie aux boucliers (" COLOR_CYAN "+%d" COLOR_RESET ") !\n", regen);
     }
+    
+    if (choixAction == 3) {
+        joueur->chargeFTL++;
+        printf(COLOR_YELLOW "\n[MOTEURS] Chargement du saut FTL : %d/3..." COLOR_RESET "\n", joueur->chargeFTL);
+        if (joueur->chargeFTL >= 3) {
+            printf(COLOR_GREEN "SAUT EFFECTUÉ ! Vous avez échappé au combat." COLOR_RESET "\n");
+            ennemi->coque = 0; 
+            return;
+        }
+    } else {
+        joueur->chargeFTL = 0;
+    }
 
     SLEEP_MS(1500);
 
@@ -164,6 +187,17 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
             printf("\nESQUIVE ! Le tir ennemi vous manque.\n");
         } else {
             int degatsEnnemi;
+
+            if (ennemi->coque > 0 && ennemi->coque < (ennemi->coqueMax * 0.3)) {
+                ennemi->chargeFTL++;
+                printf(COLOR_RED "\n[ALERTE] L'ennemi tente de fuir ! Charge FTL ennemie : %d/3" COLOR_RESET "\n", ennemi->chargeFTL);
+                
+                if (ennemi->chargeFTL >= 3) {
+                    printf(COLOR_YELLOW "\nL'ennemi a sauté dans l'hyper-espace... Vous avez perdu votre proie." COLOR_RESET "\n");
+                    ennemi->coque = 0;
+                    return;
+                }
+            }
             
             // L'ennemi utilise un missile s'il en a
             if (ennemi->missiles > 0) {
@@ -218,12 +252,18 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     Vaisseau ennemi;
     srand(seed);
 
-    char *nomsEnnemis[] = {"Rogue One", "Etoile du Vide", "Pilleur", "Vortex Sombre", "Hacker Solaire"};
-    strcpy(ennemi.nom, nomsEnnemis[rand() % 5]);
+    // --- GÉNÉRATEUR DE NOMS PROCÉDURAL ---
+    char *prefixe[] = {"Vortex", "Spectre", "Chasseur", "Eclat", "Ombre", "Lame", "Titan", "Pilleur", "Comete", "Nebula"};
+    char *suffixe[] = {"Solaire", "du Vide", "de Plasma", "Eternel", "de Sang", "de Fer", "Spectral", "du Chaos", "des Glaces"};
 
-    // --- Calcul du Rang global de l'ennemi (Secteur 1-10 -> Mk1, 10-20 -> Mk2, etc.) ---
+    // Calcul automatique du nombre d'éléments
+    int nPre = sizeof(prefixe) / sizeof(prefixe[0]);
+    int nSuf = sizeof(suffixe) / sizeof(suffixe[0]);
+
+    sprintf(ennemi.nom, "%s %s", prefixe[rand() % nPre], suffixe[rand() % nSuf]);
+
     int rangEnnemi = 1 + (secteur / 10);
-    if (rangEnnemi > 5) rangEnnemi = 5; // On cap à Mk V
+    if (rangEnnemi > 5) rangEnnemi = 5; 
 
     // Logique Capital Ship
     if (secteur >= 10 && (rand() % 100) < 25) {
@@ -242,7 +282,7 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     } else {
         // Types classiques (Eclaireur, Chasseur, Croiseur)
         int type = rand() % 3;
-        ennemi.moteurs = (type == 0) ? 2 : 1; 
+        ennemi.moteurs = (type == 0) ? 3 : 1; 
         ennemi.coqueMax = 10 + secteur;
 
         // Génération automatique du nom d'équipement
@@ -258,6 +298,7 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     ennemi.coque = ennemi.coqueMax;
     ennemi.bouclierActuel = ennemi.systemeBouclier.efficacite;
     ennemi.missiles = (secteur > 5) ? 2 : 0;
+    ennemi.chargeFTL = 0;
     
     return ennemi;
 }
