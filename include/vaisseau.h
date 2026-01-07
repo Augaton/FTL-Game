@@ -33,6 +33,7 @@ typedef struct {
     int ennemiPresent;
     int ennemiCoqueActuelle;
     int chargeFTL;
+    int maxchargeFTL;
 } Vaisseau;
 
 void afficherVaisseau(Vaisseau *v);

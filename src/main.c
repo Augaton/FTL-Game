@@ -53,9 +53,11 @@ int main() {
         joueur.moteurs = 0;
 
         // IMPORTANT
-
         joueur.ennemiPresent = 0;       
         joueur.ennemiCoqueActuelle = 0;
+
+        joueur.chargeFTL = 0;
+        joueur.maxchargeFTL = 3;
 
         // Initialisation arme
         strcpy(joueur.systemeArme.nom, "Laser Burst");

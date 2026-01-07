@@ -69,6 +69,20 @@ void lancerCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     if (joueur->coque > 0) {
         int gain = (rand() % 20) + 15;
 
+        // si fuite
+        if (ennemi->chargeFTL >= ennemi->maxchargeFTL) {
+            printf(COLOR_YELLOW "\nL'ennemi a sauté dans l'hyper-espace... Vous avez perdu votre proie." COLOR_RESET "\n");
+            SLEEP_MS(800);
+            return;
+        }
+
+        if (joueur->chargeFTL >= joueur->maxchargeFTL) {
+            printf(COLOR_GREEN "SAUT EFFECTUÉ ! Vous avez échappé au combat." COLOR_RESET "\n");
+            SLEEP_MS(800);
+            return;
+        }
+
+
         // Si tuer pendant la fuite de l'ennemie, petit bonus
         if (ennemi->chargeFTL > 0) {
             int bonus = gain / 2; // +50% de bonus
@@ -132,6 +146,7 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 
             if (checkEsquive(15, joueur)) { // Ici 15 représente l'esquive ennemie de base
                 printf("\nL'ennemi a esquive votre tir !\n");
+                SLEEP_MS(800);
             } else {
                 if (choixArme == 2 && joueur->missiles > 0) {
                     joueur->missiles--;
@@ -150,22 +165,27 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
                         } else {
                             int surplus = degatsTotal - ennemi->bouclierActuel;
                             printf(COLOR_YELLOW "\nLASER : Bouclier percé ! " COLOR_RESET);
+                            SLEEP_MS(200);
                             printf("Le bouclier absorbe %d et la " COLOR_RED "coque subit %d !" COLOR_RESET "\n", ennemi->bouclierActuel, surplus);
+                            SLEEP_MS(600);
                             ennemi->bouclierActuel = 0;
                             ennemi->coque -= surplus;
                         }
                     } else {
                         ennemi->coque -= degatsTotal;
                         printf("\nLASER : Impact direct sur la coque (" COLOR_RED "-%d" COLOR_RESET ") !\n", degatsTotal);
+                        SLEEP_MS(600);
                     }
                 }
             }
+            SLEEP_MS(1000);
+            tourFini = 1;
             
             // Recharge automatique légère après l'attaque
             if (joueur->bouclierActuel < joueur->systemeBouclier.efficacite) {
                 joueur->bouclierActuel += 1;
                 printf("[SYSTEME] Recharge automatique du bouclier (+1).\n");
-                tourFini = 1;
+                SLEEP_MS(400);
             }
 
         } else if (choixAction == 2) {
@@ -174,15 +194,17 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
             if (joueur->bouclierActuel > joueur->systemeBouclier.efficacite) joueur->bouclierActuel = joueur->systemeBouclier.efficacite;
             printf("\n[MANOEUVRE] Vous déviez l'énergie aux boucliers (" COLOR_CYAN "+%d" COLOR_RESET ") !\n", regen);
             tourFini = 1;
+            SLEEP_MS(800);
         }
         
         if (choixAction == 3) {
             joueur->chargeFTL++;
-            printf(COLOR_YELLOW "\n[MOTEURS] Chargement du saut FTL : %d/3..." COLOR_RESET "\n", joueur->chargeFTL);
-            if (joueur->chargeFTL >= 3) {
-                printf(COLOR_GREEN "SAUT EFFECTUÉ ! Vous avez échappé au combat." COLOR_RESET "\n");
+            printf(COLOR_YELLOW "\n[MOTEURS] Chargement du saut FTL : %d/%d..." COLOR_RESET "\n", joueur->chargeFTL, joueur->maxchargeFTL);
+            SLEEP_MS(600);
+            if (joueur->chargeFTL >= joueur->maxchargeFTL) {
                 ennemi->coque = 0; 
                 return;
+                SLEEP_MS(1000);
             }
             tourFini = 1;
         }
@@ -195,7 +217,7 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 
     if (choixAction != 3) joueur->chargeFTL = 0;
 
-    SLEEP_MS(1500);
+    SLEEP_MS(500);
 
     // --- CONTRE-ATTAQUE ENNEMIE ---
     if (ennemi->coque > 0) {
@@ -204,17 +226,20 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 
         if (checkEsquive(10, joueur)) {
             printf("\nESQUIVE ! Le tir ennemi vous manque.\n");
+            SLEEP_MS(800);
         } else {
             int degatsEnnemi;
 
             if (ennemi->coque > 0 && ennemi->coque < (ennemi->coqueMax * 0.3)) {
                 ennemi->chargeFTL++;
-                printf(COLOR_RED "\n[ALERTE] L'ennemi tente de fuir ! Charge FTL ennemie : %d/3" COLOR_RESET "\n", ennemi->chargeFTL);
-                
-                if (ennemi->chargeFTL >= 3) {
-                    printf(COLOR_YELLOW "\nL'ennemi a sauté dans l'hyper-espace... Vous avez perdu votre proie." COLOR_RESET "\n");
+                printf(COLOR_RED "\n[ALERTE] L'ennemi tente de fuir ! Charge FTL ennemie : %d/%d" COLOR_RESET "\n", ennemi->chargeFTL, ennemi->maxchargeFTL);
+                SLEEP_MS(800);
+                if (ennemi->chargeFTL >= ennemi->maxchargeFTL) {
                     ennemi->coque = 0;
+                    SLEEP_MS(800);
                     return;
+                } else {
+                    return; // Fin du tour sans attaque
                 }
             }
             
@@ -225,6 +250,7 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
                 joueur->coque -= degatsEnnemi;
                 ennemi->missiles--;
                 printf(" Impact direct sur votre coque (-%d) !\n", degatsEnnemi);
+                SLEEP_MS(800);
             } 
             else {
                 int degatsBase = joueur->systemeArme.efficacite;
@@ -234,16 +260,20 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
                     if (joueur->bouclierActuel >= degatsEnnemi) {
                         joueur->bouclierActuel -= degatsEnnemi;
                         printf(COLOR_CYAN "\nVotre bouclier encaisse tout ! (-%d)" COLOR_RESET "\n", degatsEnnemi);
+                        SLEEP_MS(800);
                     } else {
                         int surplus = degatsEnnemi - joueur->bouclierActuel;
                         printf(COLOR_YELLOW "\nALERTE : Bouclier surchargé ! " COLOR_RESET);
+                        SLEEP_MS(200);
                         printf(COLOR_RED "%d dégâts ont traversé jusqu'à la coque !" COLOR_RESET "\n", surplus);
+                        SLEEP_MS(600);
                         joueur->bouclierActuel = 0;
                         joueur->coque -= surplus;
                     }
                 } else {
                     joueur->coque -= degatsEnnemi;
                     printf("\n" COLOR_RED "ALERTE ! Votre coque est touchée de plein fouet (-%d) !" COLOR_RESET "\n", degatsEnnemi);
+                    SLEEP_MS(800);
                 }
             }
         }
@@ -255,6 +285,7 @@ bool checkEsquive(int chanceEsquive, Vaisseau *joueur) {
     int chanceTotale = chanceEsquive + (joueur->moteurs * 5); // varible ChanceEsquive de base + 5% par niveau de moteur
     if ((rand() % 100) < chanceTotale) {
         printf("ESQUIVE ! Les moteurs ont permis d'eviter le tir.\n");
+        SLEEP_MS(200);
         return true; // Le tir rate
     }
     return false; // Le tir touche
@@ -264,12 +295,14 @@ void rechargerBoucliers(Vaisseau *v) {
     if (v->bouclierActuel < v->systemeBouclier.efficacite) {
         v->bouclierActuel++; 
         printf("[SYSTEME] Bouclier regenere : %d/%d\n", v->bouclierActuel, v->systemeBouclier.efficacite);
+        SLEEP_MS(300);
     }
 }
 
 Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     Vaisseau ennemi;
-    srand(seed);
+    unsigned int seedUnique = seed + (secteur * 100);
+    srand(seedUnique);
 
     // --- GÉNÉRATEUR DE NOMS PROCÉDURAL ---
     char *prefixe[] = {"Vortex", "Spectre", "Chasseur", "Eclat", "Ombre", "Lame", "Titan", "Pilleur", "Comete", "Nebula"};
@@ -318,6 +351,7 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     ennemi.bouclierActuel = ennemi.systemeBouclier.efficacite;
     ennemi.missiles = (secteur > 5) ? 2 : 0;
     ennemi.chargeFTL = 0;
+    ennemi.maxchargeFTL = 3;
     
     return ennemi;
 }
