@@ -24,10 +24,13 @@
     #define SLEEP_MS(ms) usleep((ms) * 1000)
 #endif
 
-// Fonction pour effacer l'écran (optionnel mais génial pour l'immersion)
 void effacerEcran();
 void afficherGameOver(Vaisseau *joueur);
 void afficherVictoire(Vaisseau *joueur);
 void attendreJoueur();
+
+void sauvegarderPartie(Vaisseau *joueur);
+int chargerPartie(Vaisseau *joueur);
+void supprimerSauvegarde();
 
 #endif

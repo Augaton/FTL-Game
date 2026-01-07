@@ -64,3 +64,39 @@ void attendreJoueur() {
     while ((c = getchar()) != '\n' && c != EOF); // Nettoie le buffer
     getchar(); // Attend la pression de Entrée
 }
+
+// Sauvegarde et chargement
+
+void sauvegarderPartie(Vaisseau *v) {
+    FILE *fichier = fopen("savegame.dat", "wb"); // 'wb' pour Write Binary
+    if (fichier == NULL) {
+        printf("\n" COLOR_RED "[ERREUR] Impossible de créer le fichier de sauvegarde." COLOR_RESET "\n");
+        return;
+    }
+
+    // On écrit toute la structure d'un coup
+    fwrite(v, sizeof(Vaisseau), 1, fichier);
+    
+    fclose(fichier);
+    printf("\n" COLOR_GREEN "💾 Progression synchronisée avec les serveurs de la Fédération." COLOR_RESET "\n");
+}
+
+int chargerPartie(Vaisseau *v) {
+    FILE *fichier = fopen("savegame.dat", "rb"); // 'rb' pour Read Binary
+    if (fichier == NULL) {
+        return 0; // Pas de sauvegarde trouvée
+    }
+
+    fread(v, sizeof(Vaisseau), 1, fichier);
+    fclose(fichier);
+    return 1; // Chargement réussi
+}
+
+void supprimerSauvegarde() {
+    // On vérifie si le fichier existe avant de tenter de le supprimer
+    if (remove("savegame.dat") == 0) {
+        printf(COLOR_RED "\n[SYSTEME] Données de vol effacées. Fin de transmission.\n" COLOR_RESET);
+    } else {
+        // Le fichier n'existait probablement pas, rien à faire
+    }
+}
