@@ -11,5 +11,6 @@ void rechargerBoucliers(Vaisseau *v);
 Vaisseau genererEnnemi(int secteur, unsigned int seed);
 Vaisseau genererBossFinal();
 int calculerDegats(int puissanceArme, int niveauMoteur);
+void analyserEnnemi(Vaisseau *joueur, Vaisseau *ennemi);
 
 #endif
