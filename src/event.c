@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 void menuVoyage(Vaisseau *joueur) {
     int continuerMenu = 1;
@@ -202,7 +203,10 @@ void executerEvenement(Vaisseau *joueur, const char* type) {
 }
 
 void lancerEvenementAleatoire(Vaisseau *joueur) {
-    int typeEv = rand() % 7; // On définit 7 types d'événements
+    // On fixe l'aléatoire sur la seed du secteur
+    srand(joueur->seedSecteur);
+
+    int typeEv = rand() % 7; 
 
     switch(typeEv) {
         case 0: evenementMarchandAmbulant(joueur); break;
@@ -213,30 +217,49 @@ void lancerEvenementAleatoire(Vaisseau *joueur) {
         case 5: evenementDeresse(joueur); break;
         case 6: evenementLoterie(joueur); break;
     }
+
+    // Une fois l'événement choisi et traité, on remet le temps réel 
+    // pour que les futurs jets de dés (combat, etc.) ne soient pas prévisibles.
+    srand((unsigned int)time(NULL));
 }
 
 // LISTE DES ÉVÉNEMENTS
 
 void evenementDeresse(Vaisseau *joueur) {
     int choix;
-    printf("\n[SIGNAL DE DETRESSE] Un transporteur civil est en panne.\n");
+    printf("\n" COLOR_YELLOW "[SIGNAL DE DETRESSE] Un transporteur civil est en panne." COLOR_RESET "\n");
     printf("1. Aider (70%% chance de succes)\n");
     printf("2. Ignorer\n");
     printf("Votre decision : ");
     scanf("%d", &choix);
 
     if (choix == 1) {
-        if ((rand() % 100) < 70) {
+        // --- IMPLÉMENTATION DE LA SEED ---
+        // On force l'aléatoire à être celui prévu pour ce secteur
+        srand(joueur->seedSecteur);
+        
+        // Ce calcul donnera TOUJOURS le même résultat pour cette seed
+        int jetDeDes = rand() % 100; 
+
+        if (jetDeDes < 70) {
             joueur->ferraille += 20;
-            printf("Succes ! +20 Ferraille.\n");
+            printf(COLOR_GREEN "Succes ! " COLOR_RESET "+20 Ferraille.\n");
         } else {
             joueur->coque -= 3;
-            printf("Piege ! L'explosion vous inflige 3 degats.\n");
+            printf(COLOR_RED "Piege ! " COLOR_RESET "L'explosion vous inflige 3 degats.\n");
         }
+        
+        // On sauvegarde immédiatement pour figer le résultat
+        sauvegarderPartie(joueur);
+
     } else {
         printf("Vous passez votre chemin.\n");
     }
 
+    srand((unsigned int)time(NULL));
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    
     attendreJoueur();
 }
 
@@ -249,7 +272,9 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
     scanf("%d", &choix);
 
     if (choix == 1) {
+        srand(joueur->seedSecteur + 101); // Variation de la seed pour cet événement
         int r = rand() % 100;
+
         if (r < 60) {
             int gain = 30 + (rand() % 20);
             printf(COLOR_GREEN "Succès ! Vos hommes ramènent %d Ferraille." COLOR_RESET "\n", gain);
@@ -263,6 +288,10 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
         joueur->ferraille += 5;
     }
 
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
+
     attendreJoueur();
 }
 
@@ -270,12 +299,20 @@ void evenementPluieAsteroides(Vaisseau *joueur) {
     printf("\n" COLOR_YELLOW "[ALERTE]" COLOR_RESET " Vous traversez un champ d'astéroïdes instable !\n");
     
     int chanceEsquive = 40 + (joueur->moteurs * 10); // Plus de moteurs = plus de survie
-    if ((rand() % 100) < chanceEsquive) {
+
+    srand(joueur->seedSecteur + 303); // Variation de la seed pour cet événement
+    int r = rand() % 100;
+
+    if (r < chanceEsquive) {
         printf(COLOR_GREEN "Manoeuvre parfaite ! Vous slalomez entre les rochers." COLOR_RESET "\n");
     } else {
         printf(COLOR_RED "CHOC ! Un astéroïde percute le flanc gauche. Coque -3." COLOR_RESET "\n");
         joueur->coque -= 3;
     }
+
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
 
     attendreJoueur();
 }
@@ -286,6 +323,7 @@ void evenementAnomalieSpatiale(Vaisseau *joueur) {
     for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(600); }
     printf("\n");
 
+    srand(joueur->seedSecteur + 404);
     int r = rand() % 100;
 
     if (r < 25) { 
@@ -321,6 +359,10 @@ void evenementAnomalieSpatiale(Vaisseau *joueur) {
         printf("Dégâts structurels subis (-4 Coque) et perte d'une unité de carburant.\n");
     }
 
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
+
     attendreJoueur();
 }
 
@@ -333,6 +375,7 @@ void evenementCapsuleSurvie(Vaisseau *joueur) {
     scanf("%d", &choix);
 
     if (choix == 1) {
+        srand(joueur->seedSecteur + 505); // Variation de la seed pour cet événement
         int r = rand() % 100;
         if (r < 40) {
             printf(COLOR_GREEN "✨ MIRACLE : Un ingénieur était à l'intérieur ! Il répare vos systèmes. (+5 Coque)" COLOR_RESET "\n");
@@ -350,6 +393,10 @@ void evenementCapsuleSurvie(Vaisseau *joueur) {
         printf("Vous broyez la capsule : +5 Ferraille.\n");
         joueur->ferraille += 5;
     }
+
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
 
     attendreJoueur();
 }
@@ -382,6 +429,10 @@ void evenementMarchandAmbulant(Vaisseau *joueur) {
         printf("Le marchand s'éloigne en maugréant.\n");
     }
 
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
+
     attendreJoueur();
 }
 
@@ -406,8 +457,11 @@ void evenementLoterie(Vaisseau *joueur) {
         joueur->ferraille -= 10;
         printf("\nLancement de la machine");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
-        
-        if ((rand() % 100) < 45) { // 45% de chance de gagner
+
+        srand(joueur->seedSecteur + 606);
+        int r = rand() % 100;
+
+        if (r < 45) { // 45% de chance de gagner
             printf(COLOR_GREEN " GAGNÉ ! +20 Ferrailles !" COLOR_RESET "\n");
             joueur->ferraille += 20;
         } else {
@@ -423,7 +477,10 @@ void evenementLoterie(Vaisseau *joueur) {
         printf("\nLa roue de la fortune tourne");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(700); }
 
-        if ((rand() % 100) < 25) { // 25% de chance seulement (Gros lot)
+        srand(joueur->seedSecteur + 607);
+        int r = rand() % 100;
+
+        if (r < 25) { // 25% de chance seulement (Gros lot)
             printf(COLOR_YELLOW " JACKPOT !!! +150 Ferrailles !" COLOR_RESET "\n");
             joueur->ferraille += 150;
         } else {
@@ -433,5 +490,9 @@ void evenementLoterie(Vaisseau *joueur) {
         printf("Vous gardez votre argent pour des réparations plus urgentes.\n");
     }
 
+    strcpy(joueur->secteurActuel, "REPOS"); 
+    joueur->ennemiPresent = 0;
+    sauvegarderPartie(joueur);
+    
     attendreJoueur();
 }
