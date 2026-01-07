@@ -236,7 +236,8 @@ void evenementDeresse(Vaisseau *joueur) {
     if (choix == 1) {
         // --- IMPLÉMENTATION DE LA SEED ---
         // On force l'aléatoire à être celui prévu pour ce secteur
-        srand(joueur->seedSecteur);
+        unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 210);
+        srand(seedUnique);
         
         // Ce calcul donnera TOUJOURS le même résultat pour cette seed
         int jetDeDes = rand() % 100; 
@@ -269,7 +270,9 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
     scanf("%d", &choix);
 
     if (choix == 1) {
-        srand(joueur->seedSecteur + 101); // Variation de la seed pour cet événement
+        unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 220);
+        srand(seedUnique);
+
         int r = rand() % 100;
 
         if (r < 60) {
@@ -285,7 +288,7 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
         joueur->ferraille += 5;
     }
 
-finaliserEvenement(joueur);
+    finaliserEvenement(joueur);
 
     attendreJoueur();
 }
@@ -295,7 +298,8 @@ void evenementPluieAsteroides(Vaisseau *joueur) {
     
     int chanceEsquive = 40 + (joueur->moteurs * 10); // Plus de moteurs = plus de survie
 
-    srand(joueur->seedSecteur + 303); // Variation de la seed pour cet événement
+    unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 330);
+    srand(seedUnique);
     int r = rand() % 100;
 
     if (r < chanceEsquive) {
@@ -315,7 +319,9 @@ void evenementAnomalieSpatiale(Vaisseau *joueur) {
     for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(600); }
     printf("\n");
 
-    srand(joueur->seedSecteur + 404);
+    unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 440);
+    srand(seedUnique);
+
     int r = rand() % 100;
 
     if (r < 25) { 
@@ -365,7 +371,8 @@ void evenementCapsuleSurvie(Vaisseau *joueur) {
     scanf("%d", &choix);
 
     if (choix == 1) {
-        srand(joueur->seedSecteur + 505); // Variation de la seed pour cet événement
+        unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 550);
+        srand(seedUnique);
         int r = rand() % 100;
         if (r < 40) {
             printf(COLOR_GREEN "✨ MIRACLE : Un ingénieur était à l'intérieur ! Il répare vos systèmes. (+5 Coque)" COLOR_RESET "\n");
@@ -442,7 +449,8 @@ void evenementLoterie(Vaisseau *joueur) {
         printf("\nLancement de la machine");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
 
-        srand(joueur->seedSecteur + 606);
+        unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 660);
+        srand(seedUnique);
         int r = rand() % 100;
 
         if (r < 45) { // 45% de chance de gagner
@@ -461,7 +469,8 @@ void evenementLoterie(Vaisseau *joueur) {
         printf("\nLa roue de la fortune tourne");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(700); }
 
-        srand(joueur->seedSecteur + 607);
+        unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 661);
+        srand(seedUnique);
         int r = rand() % 100;
 
         if (r < 25) { // 25% de chance seulement (Gros lot)

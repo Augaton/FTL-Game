@@ -111,7 +111,6 @@ void ouvrirMagasin(Vaisseau *joueur) {
 void ameliorerArme(Vaisseau *v) {
     v->systemeArme.rang++;
     v->systemeArme.efficacite += 2; 
-    // On met à jour le nom dynamiquement
     snprintf(v->systemeArme.nom, 50, "Laser Pulse Mk %d", v->systemeArme.rang);
     printf(COLOR_GREEN "✔ Votre arme est maintenant : %s !\n" COLOR_RESET, v->systemeArme.nom);
 }
