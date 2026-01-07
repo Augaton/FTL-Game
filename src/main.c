@@ -64,6 +64,7 @@ int main() {
         joueur.carburant = 10;
         joueur.distanceParcourue = 0;
         joueur.moteurs = 0;
+        joueur.precision = 0;
 
         // IMPORTANT
         joueur.ennemiPresent = 0;       

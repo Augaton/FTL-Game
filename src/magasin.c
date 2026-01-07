@@ -50,34 +50,44 @@ void ouvrirMagasin(Vaisseau *joueur) {
                 joueur->ferraille -= 5; joueur->carburant += 1; stockCarburant--;
             }
         } 
-        else if (categorie == 2) {
-            // --- UPGRADES (Version Composants) ---
+else if (categorie == 2) {
             int choix = 0;
             printf("\n" COLOR_RED "─── AMÉLIORATIONS DE RANG ───" COLOR_RESET "\n");
-            if (aVenduUpgrade) printf(COLOR_YELLOW "!! Une seule modification par escale !!\n" COLOR_RESET);
             
-            // On affiche le nom et le rang actuel
+            int limiteUpgrades = rand() % 3 + 1;
+            if (aVenduUpgrade >= limiteUpgrades) printf(COLOR_YELLOW "!! Ingénieurs Épuisés (Stock limité) !!\n" COLOR_RESET);
+            
             printf("1. Upgrade %-15s (Mk %d) | 40 Fer.\n", joueur->systemeArme.nom, joueur->systemeArme.rang);
             printf("2. Upgrade %-15s (Mk %d) | 50 Fer.\n", joueur->systemeBouclier.nom, joueur->systemeBouclier.rang);
-            printf("3. Moteurs (Esquive) (Lvl %-2d)         | 30 Fer.\n", joueur->moteurs);
-            printf("4. Retour\n > ");
+            printf("3. Moteurs (Esquive Lvl %d)            | 30 Fer.\n", joueur->moteurs);
+            // NOUVELLES OPTIONS
+            printf("4. Renforcer Coque (+10 Max)            | 45 Fer.\n");
+            printf("5. Système de Visée (+5 Precision)      | 35 Fer.\n");
+            printf("6. Retour\n > ");
             scanf("%d", &choix);
 
-            if (!aVenduUpgrade) {
+            if (aVenduUpgrade < limiteUpgrades) {
                 if (choix == 1 && joueur->ferraille >= 40) {
-                    joueur->ferraille -= 40;
-                    ameliorerArme(joueur); // Utilise ta fonction annexe
-                    aVenduUpgrade = 1;
+                    joueur->ferraille -= 40; ameliorerArme(joueur); aVenduUpgrade++;
                 } else if (choix == 2 && joueur->ferraille >= 50) {
-                    joueur->ferraille -= 50;
-                    ameliorerBouclier(joueur); // À créer ci-dessous
-                    aVenduUpgrade = 1;
+                    joueur->ferraille -= 50; ameliorerBouclier(joueur); aVenduUpgrade++;
                 } else if (choix == 3 && joueur->ferraille >= 30) {
-                    joueur->ferraille -= 30;
-                    joueur->moteurs++;
-                    aVenduUpgrade = 1;
+                    joueur->ferraille -= 30; joueur->moteurs++; aVenduUpgrade++;
                     printf(COLOR_GREEN "✔ Moteurs optimisés.\n" COLOR_RESET);
+                } else if (choix == 4 && joueur->ferraille >= 45) {
+                    joueur->ferraille -= 45;
+                    joueur->coqueMax += 10;
+                    joueur->coque += 10; // Soin cohérent
+                    printf(COLOR_GREEN "✔ Coque renforcée : %d/%d !\n" COLOR_RESET, joueur->coque, joueur->coqueMax);
+                    aVenduUpgrade++;
+                } else if (choix == 5 && joueur->ferraille >= 35) {
+                    joueur->ferraille -= 35;
+                    joueur->precision += 5;
+                    printf(COLOR_GREEN "✔ Système de visée calibré (+5%% de précision) !\n" COLOR_RESET);
+                    aVenduUpgrade++;
                 }
+            } else if (choix != 6) {
+                printf(COLOR_RED "Les ingénieurs sont trop occupés pour d'autres travaux !\n" COLOR_RESET);
             }
         }
         else if (categorie == 3) {

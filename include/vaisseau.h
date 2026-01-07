@@ -19,6 +19,7 @@ typedef struct {
     // --- SYSTÈME D'ÉQUIPEMENT ---
     Composant systemeArme;
     Composant systemeBouclier;
+    int precision;
     
     // État actuel des boucliers (énergie disponible)
     int bouclierActuel; 
