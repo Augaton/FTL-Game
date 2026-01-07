@@ -352,6 +352,7 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     ennemi.missiles = (secteur > 5) ? 2 : 0;
     ennemi.chargeFTL = 0;
     ennemi.maxchargeFTL = 3;
+    ennemi.distanceParcourue = secteur;
     
     return ennemi;
 }
