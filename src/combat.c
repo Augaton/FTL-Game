@@ -117,194 +117,210 @@ void lancerCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 }
 
 void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
-    int choixAction, choixArme, scanRet;
-    int tourFini = 0; // Pour gérer les actions gratuites
+    int choixAction, choixArme, choixCible;
+    int tourFini = 0; 
+
+    // GESTION DES DEBUFFS JOUEUR (Reset début de tour)
+    if (joueur->debuffMoteur > 0) joueur->debuffMoteur--;
+    if (joueur->debuffArme > 0) joueur->debuffArme--;
 
     do {
+        // 1. AFFICHER L'ÉTAT
         afficherEtatCombat(joueur, ennemi);
+        
+        if (ennemi->debuffArme > 0) printf(COLOR_RED "[INFO] Armes ennemies endommagees (Dégâts réduits)\n" COLOR_RESET);
+        if (ennemi->debuffMoteur > 0) printf(COLOR_RED "[INFO] Moteurs ennemis HS (Esquive nulle)\n" COLOR_RESET);
 
+        // 2. MENU PRINCIPAL
         printf(COLOR_CYAN "\n--- VOTRE TOUR ---\n" COLOR_RESET);
-        printf(COLOR_YELLOW "1. ATTAQUER\n" COLOR_RESET);
-        printf(COLOR_BLUE "2. RECHARGER BOUCLIERS (Regen +2 a +4)" COLOR_RESET);
-        printf(COLOR_MAGENTA "\n3. TENTER LA FUITE (");
-        afficherBarreFTL(joueur->chargeFTL);
-        printf( ")\n" COLOR_RESET);
-        printf(COLOR_GREEN "4. ANALYSER LE VAISSEAU ENNEMI\n" COLOR_RESET);
+        printf(COLOR_YELLOW "1. ATTAQUER (Systèmes & Armes)\n" COLOR_RESET);
+        printf(COLOR_BLUE "2. RECHARGER BOUCLIERS\n" COLOR_RESET);
+        printf(COLOR_MAGENTA "3. TENTER LA FUITE\n" COLOR_RESET);
+        printf(COLOR_GREEN "4. ANALYSER LE VAISSEAU\n" COLOR_RESET);
         printf(COLOR_YELLOW "> " COLOR_RESET);
-        scanRet = scanf("%d", &choixAction);
-
-        if (scanRet != 1) {
-            printf(COLOR_RED "\n[ERREUR] Entrée invalide ! Utilisez les chiffres du clavier.\n" COLOR_RESET);
-            
-            // VIDER LE BUFFER (Essentiel)
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF); 
-            
-            SLEEP_MS(1000);
+        
+        if (scanf("%d", &choixAction) != 1) { 
+            int c; while ((c = getchar()) != '\n' && c != EOF); 
             continue; 
         }
 
+        // --- GESTION DES ACTIONS ---
+
         if (choixAction == 1) {
-            // --- SOUS-MENU ATTAQUE ---
-            printf(COLOR_BLUE "\n--- CHOIX DE L'ARME ---\n" COLOR_RESET);
-            printf(COLOR_YELLOW "1. Canon Laser (Peut percer le bouclier)\n");
-            printf(COLOR_RED "2. Missile (Ignore bouclier | Munitions: %d)\n" COLOR_RESET, joueur->missiles);
+            // === SOUS-MENU 1 : CHOIX DE LA CIBLE ===
+            printf(COLOR_BLUE "\n--- CIBLE ---\n" COLOR_RESET);
+            printf("1. Coque Centrale  (Normal)\n");
+            printf("2. Syst. Armes     (Visée difficile | Dégâts ennemis réduits)\n");
+            printf("3. Syst. Moteurs   (Visée difficile | Annule esquive)\n");
+            printf(COLOR_WHITE "0. RETOUR\n" COLOR_RESET); // <--- BOUTON RETOUR
+            printf(COLOR_YELLOW "> " COLOR_RESET);
+            scanf("%d", &choixCible);
+
+            if (choixCible == 0) continue; // Retourne au début de la boucle 'do'
+
+            // === SOUS-MENU 2 : CHOIX DE L'ARME ===
+            printf(COLOR_BLUE "\n--- ARME ---\n" COLOR_RESET);
+            printf("1. Canon Laser\n");
+            printf("2. Missile (Stock: %d)\n", joueur->missiles);
+            printf(COLOR_WHITE "0. RETOUR\n" COLOR_RESET); // <--- BOUTON RETOUR
             printf(COLOR_YELLOW "> " COLOR_RESET);
             scanf("%d", &choixArme);
 
+            if (choixArme == 0) continue; // Retourne au début
 
-            int secretChance = rand() % 1000;
-            if (secretChance == 777) {
-                printf(COLOR_BOLD COLOR_GREEN "\nDO A BARREL ROLL !\n" COLOR_RESET);
-                SLEEP_MS(1000);
-                ennemi->coque = 0;
-                return;
-            }
-
+            // === EXECUTION DU TIR ===
             printf(COLOR_BOLD COLOR_RED "\nFeu !" COLOR_RESET);
             SLEEP_MS(600);
 
-            if (checkEsquive(15, joueur)) { // Ici 15 représente l'esquive ennemie de base
-                printf(COLOR_RED "\nL'ennemi a esquive votre tir !\n" COLOR_RESET);
+            // Calcul Malus Visée
+            int malusVisee = (choixCible == 2 || choixCible == 3) ? 20 : 0;
+            int esquiveEnnemi = 15 + (ennemi->moteurs * 5) + malusVisee; 
+            
+            // Vérification Touche
+            if (checkEsquive(esquiveEnnemi, ennemi)) { 
+                printf(COLOR_RED "\nLe tir passe a cote de la cible visée !\n" COLOR_RESET);
                 SLEEP_MS(800);
             } else {
+                int degats = 0;
+                int estTouche = 0;
+
+                // Logique Missile vs Laser
                 if (choixArme == 2 && joueur->missiles > 0) {
                     joueur->missiles--;
-                    int degatsFinaux = calculerDegats(3 + (joueur->distanceParcourue / 5), joueur->moteurs);
-                    ennemi->coque -= degatsFinaux;
-                    printf("\n" COLOR_RED "MISSILE : Impact direct sur la coque (-%d) !" COLOR_RESET "\n", degatsFinaux);
-                } 
-                else {
+                    degats = calculerDegats(3 + (joueur->distanceParcourue/5), joueur->moteurs);
+                    estTouche = 1;
+                    printf("\n" COLOR_RED "MISSILE : Impact direct ! (-%d)" COLOR_RESET "\n", degats);
+                } else if (choixArme == 2) {
+                    printf("Click... Plus de missiles !\n"); // Cas munition vide
+                } else {
                     int degatsBase = joueur->systemeArme.efficacite;
-                    int degatsTotal = calculerDegats(degatsBase, joueur->moteurs);
-
-                    if (ennemi->bouclierActuel > 0) {
-                        if (ennemi->bouclierActuel >= degatsTotal) {
-                            ennemi->bouclierActuel -= degatsTotal;
-                            printf(COLOR_CYAN "\nLASER : Le bouclier ennemi absorbe tout (-%d)." COLOR_RESET "\n", degatsTotal);
-                        } else {
-                            int surplus = degatsTotal - ennemi->bouclierActuel;
-                            printf(COLOR_YELLOW "\nLASER : Bouclier percé ! " COLOR_RESET);
-                            SLEEP_MS(200);
-                            printf("Le bouclier absorbe %d et la " COLOR_RED "coque subit %d !" COLOR_RESET "\n", ennemi->bouclierActuel, surplus);
-                            SLEEP_MS(600);
-                            ennemi->bouclierActuel = 0;
-                            ennemi->coque -= surplus;
-                        }
+                    if (ennemi->bouclierActuel >= degatsBase) {
+                        ennemi->bouclierActuel -= degatsBase;
+                        printf(COLOR_CYAN "\nLe bouclier ennemi absorbe le tir.\n" COLOR_RESET);
                     } else {
-                        ennemi->coque -= degatsTotal;
-                        printf(COLOR_RED "\nLASER : Impact direct sur la coque (-%d) !\n" COLOR_RESET, degatsTotal);
-                        SLEEP_MS(600);
+                        degats = degatsBase - ennemi->bouclierActuel;
+                        ennemi->bouclierActuel = 0;
+                        estTouche = 1;
+                        printf(COLOR_RED "\nCoque touchée ! (-%d)\n" COLOR_RESET, degats);
+                    }
+                }
+
+                // Application des effets
+                if (estTouche) {
+                    ennemi->coque -= degats;
+                    if (choixCible == 2) {
+                        ennemi->debuffArme = 2;
+                        printf(COLOR_MAGENTA ">>> ARMES ENNEMIES ENDOMMAGEES ! <<<\n" COLOR_RESET);
+                    }
+                    if (choixCible == 3) {
+                        ennemi->debuffMoteur = 2;
+                        printf(COLOR_MAGENTA ">>> MOTEURS ENNEMIS CRITIQUES ! <<<\n" COLOR_RESET);
                     }
                 }
             }
             SLEEP_MS(1000);
-            tourFini = 1;
             
-            // Recharge automatique légère après l'attaque
-            if (joueur->bouclierActuel < joueur->systemeBouclier.efficacite) {
-                joueur->bouclierActuel += 1;
-                printf(COLOR_BLUE "[SYSTEME] Recharge automatique du bouclier (+1).\n" COLOR_RESET);
-                SLEEP_MS(400);
-            }
+            // Fin du tour après l'attaque
+            tourFini = 1; 
+            if (joueur->bouclierActuel < joueur->systemeBouclier.efficacite) joueur->bouclierActuel++;
 
-        } else if (choixAction == 2) {
-            int regen = (rand() % 3) + 2;
+        } 
+        else if (choixAction == 2) {
+            // --- RECHARGE ACTIVE (PUISSANTE) ---
+            // On génère entre 2 et 4 points de bouclier
+            int regen = (rand() % 3) + 2; 
+            
+            int avant = joueur->bouclierActuel;
             joueur->bouclierActuel += regen;
-            if (joueur->bouclierActuel > joueur->systemeBouclier.efficacite) joueur->bouclierActuel = joueur->systemeBouclier.efficacite;
-            printf("\n[MANOEUVRE] Vous déviez l'énergie aux boucliers (" COLOR_CYAN "+%d" COLOR_RESET ") !\n", regen);
-            tourFini = 1;
-            SLEEP_MS(800);
-        }
-        
-        if (choixAction == 3) {
-            joueur->chargeFTL++;
-            printf(COLOR_YELLOW "\n[MOTEURS] Chargement du saut FTL : %d/%d..." COLOR_RESET "\n", joueur->chargeFTL, joueur->maxchargeFTL);
-            SLEEP_MS(600);
-            if (joueur->chargeFTL >= joueur->maxchargeFTL) {
-                ennemi->coque = 0; 
-                return;
-                SLEEP_MS(1000);
-            }
-            tourFini = 1;
-        }
 
+            // On ne dépasse pas le max autorisé par le système installé
+            if (joueur->bouclierActuel > joueur->systemeBouclier.efficacite) {
+                joueur->bouclierActuel = joueur->systemeBouclier.efficacite;
+            }
+
+            int gainReel = joueur->bouclierActuel - avant;
+
+            printf(COLOR_BLUE "\n[MANOEUVRE] Energie détournée vers les boucliers !\n" COLOR_RESET);
+            printf("Récupération de " COLOR_CYAN "+%d barres" COLOR_RESET " (Total: %d/%d)\n", 
+                gainReel, joueur->bouclierActuel, joueur->systemeBouclier.efficacite);
+            
+            SLEEP_MS(1000);
+            tourFini = 1; // Le tour est fini, on ne peut plus attaquer
+        }
+        else if (choixAction == 3) {
+            joueur->chargeFTL++;
+            printf(COLOR_YELLOW "\nChargement FTL...\n" COLOR_RESET);
+            if (joueur->chargeFTL >= joueur->maxchargeFTL) { ennemi->coque = 0; return; }
+            tourFini = 1;
+        } 
         else if (choixAction == 4) {
             analyserEnnemi(joueur, ennemi);
             attendreJoueur();
+            // Note : Analyser ne termine pas le tour, c'est une action gratuite ici
         }
-    } while(!tourFini);
 
-    if (choixAction != 3) joueur->chargeFTL = 0;
+    } while(!tourFini);
 
     SLEEP_MS(500);
 
-    // --- CONTRE-ATTAQUE ENNEMIE ---
+    // --- TOUR DE L'ENNEMI ---
     if (ennemi->coque > 0) {
+        
         printf("\nL'ennemi riposte...");
         SLEEP_MS(800);
 
-        if (checkEsquive(10, joueur)) {
-            printf(COLOR_GREEN "\nESQUIVE ! Le tir ennemi vous manque.\n" COLOR_RESET);
-            SLEEP_MS(800);
-        } else {
-            int degatsEnnemi;
+        int esquiveJoueur = 10 + (joueur->moteurs * 5);
+        
+        if (ennemi->coque < (ennemi->coqueMax * 0.3) && ennemi->debuffMoteur == 0) {
+             ennemi->chargeFTL++;
+             printf(COLOR_RED "\n[ALERTE] L'ennemi charge son FTL pour fuir !\n" COLOR_RESET);
+             if (ennemi->chargeFTL >= ennemi->maxchargeFTL) {
+                 printf("L'ennemi s'est enfui !\n");
+                 ennemi->coque = 0;
+                 return;
+             }
+             // S'il charge, il ne tire pas
+             goto fin_tour_ennemi;
+        }
 
-            if (ennemi->coque > 0 && ennemi->coque < (ennemi->coqueMax * 0.3)) {
-                ennemi->chargeFTL++;
-                printf(COLOR_RED "\n[ALERTE] L'ennemi tente de fuir ! Charge FTL ennemie : %d/%d" COLOR_RESET "\n", ennemi->chargeFTL, ennemi->maxchargeFTL);
-                SLEEP_MS(800);
-                if (ennemi->chargeFTL >= ennemi->maxchargeFTL) {
-                    ennemi->coque = 0;
-                    SLEEP_MS(800);
-                    return;
-                } else {
-                    return; // Fin du tour sans attaque
-                }
+        if (checkEsquive(esquiveJoueur, joueur)) {
+            printf(COLOR_GREEN "\nESQUIVE ! Vous évitez le tir.\n" COLOR_RESET);
+        } else {
+            // L'ennemi touche
+            int degatsEntrants = ennemi->systemeArme.efficacite;
+            
+            // APPLIQUER LE DEBUFF ARMES (Si l'ennemi a ses armes cassées)
+            if (ennemi->debuffArme > 0) {
+                degatsEntrants = degatsEntrants / 2; // Dégâts divisés par 2
+                printf(COLOR_YELLOW "\n[CHANCE] Les armes endommagées de l'ennemi tirent faiblement !\n" COLOR_RESET);
             }
             
-            // L'ennemi utilise un missile s'il en a
-            if (ennemi->missiles > 0) {
-                printf("\n" COLOR_RED "L'ENNEMI LANCE UN MISSILE !" COLOR_RESET);
-                degatsEnnemi = calculerDegats(3 + (ennemi->distanceParcourue / 5), ennemi->moteurs);
-                joueur->coque -= degatsEnnemi;
-                ennemi->missiles--;
-                printf(" Impact direct sur votre coque (-%d) !\n", degatsEnnemi);
-                SLEEP_MS(800);
-            } 
-            else {
-                int degatsBase = ennemi->systemeArme.efficacite; 
-                int degatsEnnemi = calculerDegats(degatsBase, ennemi->moteurs);
+            degatsEntrants = calculerDegats(degatsEntrants, ennemi->moteurs);
 
-                if (joueur->bouclierActuel > 0) {
-                    if (joueur->bouclierActuel >= degatsEnnemi) {
-                        joueur->bouclierActuel -= degatsEnnemi;
-                        printf(COLOR_CYAN "\nVotre bouclier encaisse tout ! (-%d)" COLOR_RESET "\n", degatsEnnemi);
-                        SLEEP_MS(800);
-                    } else {
-                        int surplus = degatsEnnemi - joueur->bouclierActuel;
-                        printf(COLOR_YELLOW "\nALERTE : Bouclier surchargé ! " COLOR_RESET);
-                        SLEEP_MS(200);
-                        printf(COLOR_RED "%d dégâts ont traversé jusqu'à la coque !" COLOR_RESET "\n", surplus);
-                        SLEEP_MS(600);
-                        joueur->bouclierActuel = 0;
-                        joueur->coque -= surplus;
-                    }
-                } else {
-                    joueur->coque -= degatsEnnemi;
-                    printf("\n" COLOR_RED "ALERTE ! Votre coque est touchée de plein fouet (-%d) !" COLOR_RESET "\n", degatsEnnemi);
-                    SLEEP_MS(800);
-                }
+            // Gestion Bouclier Joueur
+            if (joueur->bouclierActuel >= degatsEntrants) {
+                joueur->bouclierActuel -= degatsEntrants;
+                printf(COLOR_CYAN "\nBouclier tient bon (-%d).\n" COLOR_RESET, degatsEntrants);
+            } else {
+                int surplus = degatsEntrants - joueur->bouclierActuel;
+                joueur->bouclierActuel = 0;
+                joueur->coque -= surplus;
+                printf(COLOR_RED "\nALERTE ! Dégâts coque subis: -%d\n" COLOR_RESET, surplus);
             }
         }
-        SLEEP_MS(1500);
     }
+
+    fin_tour_ennemi:
+    // Decrement final des compteurs de tours des debuffs
+    if (ennemi->debuffArme > 0) ennemi->debuffArme--;
+    if (ennemi->debuffMoteur > 0) ennemi->debuffMoteur--;
+    
+    SLEEP_MS(1500);
 }
 
 bool checkEsquive(int chanceEsquive, Vaisseau *joueur) {
-    int esquiveFinale = chanceEsquive - joueur->precision;
+    int esquiveFinale = chanceEsquive - joueur->precision - (joueur->debuffMoteur * 5);
     if (esquiveFinale < 0) esquiveFinale = 0;
-
 
     if ((rand() % 100) < esquiveFinale) {
         printf(COLOR_YELLOW "ESQUIVE ! Le tir a manqué la cible.\n" COLOR_RESET);
@@ -376,6 +392,9 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
     ennemi.maxchargeFTL = 3;
     ennemi.distanceParcourue = secteur;
     ennemi.precision = rand() % 5 + (secteur / 10);
+
+    ennemi.debuffArme = 0;
+    ennemi.debuffMoteur = 0;
     
     return ennemi;
 }
@@ -428,24 +447,39 @@ int calculerDegats(int puissanceArme, int niveauMoteur) {
 
 void analyserEnnemi(Vaisseau *joueur, Vaisseau *ennemi) {
     int esquiveBase = 10 + (ennemi->moteurs * 5);
+    
+    if (ennemi->debuffMoteur > 0) {
+        esquiveBase = 0;
+    }
+
     int esquiveReelle = esquiveBase - joueur->precision;
     if (esquiveReelle < 0) esquiveReelle = 0;
 
     printf("\n" COLOR_GREEN "==== [ SCANNER TACTIQUE ] ====" COLOR_RESET "\n");
     printf("Cible : " COLOR_BOLD "%-20s" COLOR_RESET "\n", ennemi->nom);
     printf("------------------------------\n");
-    printf("OFFENSE  : " COLOR_RED "%-18s" COLOR_RESET " (Dégâts: %d)\n", 
+    
+    printf("OFFENSE  : " COLOR_RED "%-18s" COLOR_RESET " (Puissance: %d)\n", 
            ennemi->systemeArme.nom, ennemi->systemeArme.efficacite);
+    
+    if (ennemi->debuffArme > 0) {
+         printf(COLOR_RED "           [!] SYSTÈME ENDOMMAGÉ : Dégâts réduits de 50%% (%d tours)\n" COLOR_RESET, ennemi->debuffArme);
+    }
+
     printf("DEFENSE  : " COLOR_CYAN "%-18s" COLOR_RESET " (Bouclier: %d)\n", 
            ennemi->systemeBouclier.nom, ennemi->systemeBouclier.efficacite);
     
-    // Affichage de l'agilité avec l'impact de ta précision
     printf("AGILITE  : " COLOR_YELLOW "Moteurs Lvl.%d" COLOR_RESET "\n", ennemi->moteurs);
-    printf("           Esquive : %d%% " COLOR_GREEN "(Précision Joueur: -%d%%)" COLOR_RESET "\n", 
-           esquiveBase, joueur->precision);
-    printf("           " COLOR_BOLD "CHANCE DE TOUCHER : %d%%" COLOR_RESET "\n", 100 - esquiveReelle);
+    
+    if (ennemi->debuffMoteur > 0) {
+        printf(COLOR_RED "           [!] MOTEURS HS : Cible immobilisée (%d tours)\n" COLOR_RESET, ennemi->debuffMoteur);
+        printf(COLOR_GREEN "           >> CHANCE DE TOUCHER : 100%% (Cible facile)\n" COLOR_RESET);
+    } else {
+        printf("           Esquive Cible : %d%% " COLOR_GREEN "(Votre Précision: -%d%%)" COLOR_RESET "\n", 
+               esquiveBase, joueur->precision);
+        printf("           " COLOR_BOLD "CHANCE DE TOUCHER : %d%%" COLOR_RESET "\n", 100 - esquiveReelle);
+    }
 
-    // --- DETECTION DE LOOT ---
     if (ennemi->systemeArme.rang > joueur->systemeArme.rang || 
         ennemi->systemeBouclier.rang > joueur->systemeBouclier.rang) {
         printf("\n" COLOR_MAGENTA "[!] SIGNAL DETECTE : Technologie supérieure récupérable !" COLOR_RESET "\n");

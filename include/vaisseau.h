@@ -21,8 +21,13 @@ typedef struct {
     Composant systemeBouclier;
     int precision;
     
-    // État actuel des boucliers (énergie disponible)
+    // État actuel des boucliers
     int bouclierActuel; 
+
+    // --- NOUVEAU : ÉTAT DES SYSTÈMES (DEBUFFS) ---
+    // 0 = OK, >0 = Nombre de tours où le système est HS/Affaibli
+    int debuffArme;   
+    int debuffMoteur; 
 
     // --- NAVIGATION ET OBJECTIFS ---
     int distanceParcourue;
@@ -30,7 +35,7 @@ typedef struct {
     char secteurActuel[50];
     unsigned int seedSecteur;
 
-    // --- ÉTAT DU COMBAT (PERSISTANCE) ---
+    // --- ÉTAT DU COMBAT ---
     int ennemiPresent;
     int ennemiCoqueActuelle;
     int chargeFTL;
