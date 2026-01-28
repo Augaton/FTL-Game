@@ -370,9 +370,11 @@ Vaisseau genererEnnemi(int secteur, unsigned int seed) {
         ennemi.systemeBouclier.rang = rangEnnemi;
         ennemi.systemeBouclier.efficacite = 3;
     } else {
-        // Types classiques (Eclaireur, Chasseur, Croiseur)
-        int type = rand() % 3;
-        ennemi.moteurs = (type == 0) ? 3 : 1; 
+        ennemi.moteurs = 1 + (secteur / 4);
+        if (ennemi.moteurs > 5) ennemi.moteurs = 5;
+
+        if (rand() % 100 < 30) ennemi.moteurs++;
+
         ennemi.coqueMax = rand() % 10 + secteur;
 
         // Génération automatique du nom d'équipement
