@@ -1,0 +1,127 @@
+name: 🚀 Build, Tag & Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Numéro de version (ex: v1.0)'
+        required: true
+        default: 'v1.0'
+      message:
+        description: 'Description courte de la mise à jour'
+        required: false
+        default: 'Mise à jour automatique via GitHub Actions'
+
+permissions:
+  contents: write # Indispensable pour créer le Tag et la Release
+
+jobs:
+  # ======================================================
+  # PHASE 1 : PRÉPARATION & VÉRIFICATION
+  # ======================================================
+  preparation:
+    name: 🔍 Check Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Vérification de présence des fichiers clés
+        run: |
+          if [ ! -f main.c ]; then echo "❌ CRITIQUE: main.c introuvable !"; exit 1; fi
+          if [ ! -f combat.c ]; then echo "❌ CRITIQUE: combat.c introuvable !"; exit 1; fi
+          echo "✅ Fichiers source présents. Prêt pour la compilation."
+
+  # ======================================================
+  # PHASE 2 : BUILD (LINUX & WINDOWS EN PARALLÈLE)
+  # ======================================================
+  build-linux:
+    name: 🐧 Build Linux
+    needs: preparation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Compilation GCC (Linux)
+        # -lm est vital pour math.h sous Linux
+        run: gcc *.c -o FTL_Linux -lm -Wall 
+        
+      - name: Upload Artifact Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-linux
+          path: FTL_Linux
+
+  build-windows:
+    name: 🪟 Build Windows
+    needs: preparation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Compilation GCC (Windows/MinGW)
+        run: gcc *.c -o FTL_Windows.exe -Wall
+        
+      - name: Upload Artifact Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-windows
+          path: FTL_Windows.exe
+
+  # ======================================================
+  # PHASE 3 : CRÉATION DU TAG ET RELEASE
+  # ======================================================
+  release:
+    name: 📦 Create Release & Tag
+    # CONDITION : Ne se lance que si Linux ET Windows ont réussi
+    needs: [build-linux, build-windows] 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code (Pour le zip source)
+        uses: actions/checkout@v4
+
+      # 1. Téléchargement des exécutables compilés
+      - name: Download Linux Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-linux
+          
+      - name: Download Windows Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-windows
+
+      # 2. Création d'une archive propre du code source (sans le dossier .git)
+      - name: Zip Source Code
+        run: zip -r FTL_Source_Code.zip . -x "*.git*" "*.github*"
+
+      # 3. Création automatique du Tag Git
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+
+      # 4. Publication de la Release
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          body: |
+            ## 🚀 FTL Console - ${{ inputs.version }}
+            ${{ inputs.message }}
+            
+            ### 📥 Téléchargements :
+            - **Windows** : `FTL_Windows.exe`
+            - **Linux/Mac** : `FTL_Linux`
+            - **Code Source** : `FTL_Source_Code.zip`
+            
+            _Compilé automatiquement par GitHub Actions._
+          files: |
+            FTL_Windows.exe
+            FTL_Linux
+            FTL_Source_Code.zip
+          draft: false
+          prerelease: false
