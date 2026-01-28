@@ -1,127 +1,123 @@
-name: 🚀 Build, Tag & Publish
+name: 🚀 Make Build & Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Numéro de version (ex: v1.0)'
-        required: true
-        default: 'v1.0'
-      message:
-        description: 'Description courte de la mise à jour'
-        required: false
-        default: 'Mise à jour automatique via GitHub Actions'
 
 permissions:
-  contents: write # Indispensable pour créer le Tag et la Release
+  contents: write
 
 jobs:
   # ======================================================
-  # PHASE 1 : PRÉPARATION & VÉRIFICATION
+  # 1. PRÉPARATION
   # ======================================================
-  preparation:
-    name: 🔍 Check Integrity
+  check-integrity:
+    name: 🔍 Sanity Check
     runs-on: ubuntu-latest
     steps:
-      - name: Récupération du code
-        uses: actions/checkout@v4
-
-      - name: Vérification de présence des fichiers clés
+      - uses: actions/checkout@v4
+      - name: Vérification structure
         run: |
-          if [ ! -f main.c ]; then echo "❌ CRITIQUE: main.c introuvable !"; exit 1; fi
-          if [ ! -f combat.c ]; then echo "❌ CRITIQUE: combat.c introuvable !"; exit 1; fi
-          echo "✅ Fichiers source présents. Prêt pour la compilation."
+          if [ ! -f Makefile ]; then echo "❌ Makefile manquant !"; exit 1; fi
+          # On vérifie si le dossier src existe car le Makefile l'attend
+          if [ ! -d src ]; then echo "❌ Dossier src/ manquant !"; exit 1; fi
+          echo "✅ Structure validée."
 
   # ======================================================
-  # PHASE 2 : BUILD (LINUX & WINDOWS EN PARALLÈLE)
+  # 2. BUILD LINUX (Natif)
   # ======================================================
   build-linux:
     name: 🐧 Build Linux
-    needs: preparation
+    needs: check-integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Compilation GCC (Linux)
-        # -lm est vital pour math.h sous Linux
-        run: gcc *.c -o FTL_Linux -lm -Wall 
-        
-      - name: Upload Artifact Linux
+      - name: Compilation avec Make
+        # On lance simplement make. Il va lire ton fichier et créer build/ftl_rpg
+        run: make
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-linux
-          path: FTL_Linux
+          path: build/ftl_rpg
 
+  # ======================================================
+  # 3. BUILD WINDOWS (Cross-Compilation via Make)
+  # ======================================================
   build-windows:
     name: 🪟 Build Windows
-    needs: preparation
-    runs-on: windows-latest
+    needs: check-integrity
+    runs-on: ubuntu-latest # On reste sur Linux pour utiliser 'make' et 'rm' sans bug
     steps:
       - uses: actions/checkout@v4
       
-      - name: Compilation GCC (Windows/MinGW)
-        run: gcc *.c -o FTL_Windows.exe -Wall
-        
-      - name: Upload Artifact Windows
+      - name: Installation MinGW (Cross-Compiler)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+
+      - name: Compilation Windows avec Make
+        # L'ASTUCE EST ICI :
+        # On surcharge les variables du Makefile :
+        # 1. CC : On remplace 'gcc' par le compilateur Windows 'x86_64-w64-mingw32-gcc'
+        # 2. EXEC : On change le nom de sortie pour ajouter .exe
+        run: make CC=x86_64-w64-mingw32-gcc EXEC=build/FTL_Windows.exe
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-windows
-          path: FTL_Windows.exe
+          path: build/FTL_Windows.exe
 
   # ======================================================
-  # PHASE 3 : CRÉATION DU TAG ET RELEASE
+  # 4. RELEASE & PUBLISH
   # ======================================================
   release:
-    name: 📦 Create Release & Tag
-    # CONDITION : Ne se lance que si Linux ET Windows ont réussi
-    needs: [build-linux, build-windows] 
+    name: 📦 Publish Release
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Récupération du code (Pour le zip source)
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. Téléchargement des exécutables compilés
       - name: Download Linux Binary
         uses: actions/download-artifact@v4
         with:
           name: binary-linux
-          
+          path: release_assets
+
       - name: Download Windows Binary
         uses: actions/download-artifact@v4
         with:
           name: binary-windows
+          path: release_assets
 
-      # 2. Création d'une archive propre du code source (sans le dossier .git)
       - name: Zip Source Code
-        run: zip -r FTL_Source_Code.zip . -x "*.git*" "*.github*"
-
-      # 3. Création automatique du Tag Git
-      - name: Create Git Tag
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
+          zip -r release_assets/FTL_Source_Code.zip . -x "*.git*" "*.github*" "release_assets*" "build*"
 
-      # 4. Publication de la Release
-      - name: Publish GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ inputs.version }}
-          name: Release ${{ inputs.version }}
+          tag_name: v${{ github.run_number }}
+          name: Version ${{ github.run_number }}
           body: |
-            ## 🚀 FTL Console - ${{ inputs.version }}
-            ${{ inputs.message }}
-            
+            ## 🚀 FTL Console - Build ${{ github.run_number }}
+            Compilation automatique via Makefile.
+
             ### 📥 Téléchargements :
-            - **Windows** : `FTL_Windows.exe`
-            - **Linux/Mac** : `FTL_Linux`
-            - **Code Source** : `FTL_Source_Code.zip`
-            
-            _Compilé automatiquement par GitHub Actions._
+            - `FTL_Windows.exe` : Windows
+            - `ftl_rpg` : Linux
+            - `Source.zip` : Code source
           files: |
-            FTL_Windows.exe
-            FTL_Linux
-            FTL_Source_Code.zip
+            release_assets/ftl_rpg
+            release_assets/FTL_Windows.exe
+            release_assets/FTL_Source_Code.zip
           draft: false
           prerelease: false
