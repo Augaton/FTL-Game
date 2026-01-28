@@ -34,7 +34,7 @@ void ouvrirMagasin(Vaisseau *joueur) {
 
     // --- GÉNÉRATION DES 3 CANDIDATS À L'EMBAUCHE ---
     Candidat recrues[3];
-    char *noms[] = {"Zorp", "Lyla", "Brack", "Neo", "Kait", "Jinx", "Rook", "Mordin", "Vex", "Lydia", "Hélydia", "Ismael", "Tara", "Orin", "Sable", "Dax", "Vera", "Kiro", "Zane", "Mira", "Ryn"};
+    char *noms[] = {"Mercredi", "Krog","Zorp", "Lyla", "Brack", "Neo", "Kait", "Jinx", "Rook", "Mordin", "Vex", "Lydia", "Hélydia", "Ismael", "Tara", "Orin", "Sable", "Dax", "Vera", "Kiro", "Zane", "Mira", "Ryn"};
     
     for(int i=0; i<3; i++) {
         strcpy(recrues[i].nom, noms[rand() % 21]);
