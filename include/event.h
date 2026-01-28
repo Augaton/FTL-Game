@@ -19,6 +19,8 @@ void evenementPluieAsteroides(Vaisseau *joueur);
 void evenementCapsuleSurvie(Vaisseau *joueur);
 void evenementAnomalieSpatiale(Vaisseau *joueur);
 void evenementLoterie(Vaisseau *joueur);
+void evenementPeagePirate(Vaisseau *joueur);
+void evenementErmite(Vaisseau *joueur);
 
 
 #endif

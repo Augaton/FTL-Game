@@ -216,6 +216,8 @@ void lancerEvenementAleatoire(Vaisseau *joueur) {
         case 4: evenementAnomalieSpatiale(joueur); break;
         case 5: evenementDeresse(joueur); break;
         case 6: evenementLoterie(joueur); break;
+        case 7: evenementPeagePirate(joueur); break;
+        case 8: evenementErmite(joueur); break;
     }
 
     // Une fois l'événement choisi et traité, on remet le temps réel 
@@ -294,19 +296,49 @@ void evenementEpaveDerivante(Vaisseau *joueur) {
 }
 
 void evenementPluieAsteroides(Vaisseau *joueur) {
-    printf("\n" COLOR_YELLOW "[ALERTE]" COLOR_RESET " Vous traversez un champ d'astéroïdes instable !\n");
+    printf("\n" COLOR_YELLOW "[DANGER] CHAMP D'ASTEROIDES DENSE DETECTE !" COLOR_RESET "\n");
+    printf("Des rochers de la taille d'une lune vous barrent la route.\n");
+
+    printf("\n1. Tenter de passer en manœuvrant (Test Moteurs)\n");
     
-    int chanceEsquive = 40 + (joueur->moteurs * 10); // Plus de moteurs = plus de survie
+    // OPTION BLEUE : SI BOUCLIER PUISSANT
+    if (joueur->systemeBouclier.efficacite >= 3) {
+        printf(COLOR_CYAN "2. [BOUCLIER LVL 3] Surcharger les boucliers et foncer (Sûr)\n" COLOR_RESET);
+    }
+    
+    // OPTION BLEUE : SI MISSILES DISPO
+    if (joueur->missiles >= 2) {
+        printf(COLOR_RED "3. [2 MISSILES] Se frayer un chemin à l'explosif (Gain de temps)\n" COLOR_RESET);
+    }
 
-    unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 330);
-    srand(seedUnique);
-    int r = rand() % 100;
+    printf(COLOR_YELLOW "> " COLOR_RESET);
+    int choix;
+    scanf("%d", &choix);
 
-    if (r < chanceEsquive) {
-        printf(COLOR_GREEN "Manoeuvre parfaite ! Vous slalomez entre les rochers." COLOR_RESET "\n");
-    } else {
-        printf(COLOR_RED "CHOC ! Un astéroïde percute le flanc gauche. Coque -3." COLOR_RESET "\n");
-        joueur->coque -= 3;
+    if (choix == 2 && joueur->systemeBouclier.efficacite >= 3) {
+        printf(COLOR_GREEN "\nLes rochers ricochent inoffensivement sur vos boucliers surchargés.\n");
+        printf("Vous en profitez pour scanner les débris : +10 Ferraille.\n" COLOR_RESET);
+        joueur->ferraille += 10;
+    } 
+    else if (choix == 3 && joueur->missiles >= 2) {
+        joueur->missiles -= 2;
+        printf(COLOR_RED "\nBOUM ! BOUM ! " COLOR_RESET "Vous pulvérisez les obstacles.\n");
+        printf("Passage dégagé sans encombre.\n");
+    } 
+    else {
+        // Logique classique (Esquive)
+        int chanceEsquive = 40 + (joueur->moteurs * 10);
+        int r = rand() % 100;
+        printf("\nVous tentez de piloter à travers le chaos...\n");
+        SLEEP_MS(800);
+
+        if (r < chanceEsquive) {
+            printf(COLOR_GREEN "Pilotage expert ! Vous évitez le pire.\n" COLOR_RESET);
+        } else {
+            int degats = (rand() % 3) + 2;
+            printf(COLOR_RED "IMPACT ! Un astéroïde percute le flanc. Coque -%d\n" COLOR_RESET, degats);
+            joueur->coque -= degats;
+        }
     }
 
     finaliserEvenement(joueur);
@@ -392,26 +424,55 @@ void evenementCapsuleSurvie(Vaisseau *joueur) {
 void evenementMarchandAmbulant(Vaisseau *joueur) {
     printf("\n" COLOR_YELLOW "[COMMERCE]" COLOR_RESET " Un marchand Jawa vous hèle sur les ondes.\n");
     printf("\"Besoin de quelque chose, étranger ?\"\n");
+    
     printf("1. Acheter 2 Carburant (10 Ferraille)\n");
     printf("2. Acheter 3 Missiles (15 Ferraille)\n");
     printf("3. Ignorer\n");
+    // NOUVELLE OPTION D'ATTAQUE
+    printf(COLOR_RED "4. Attaquer le marchand (Piraterie)\n" COLOR_RESET);
+    
     printf(COLOR_YELLOW "> " COLOR_RESET);
     int choix;
-    scanf("%d", &choix);
+    // Utilisation de ta méthode de lecture sécurisée ou scanf classique
+    if (scanf("%d", &choix) != 1) {
+        int c; while ((c = getchar()) != '\n' && c != EOF);
+        choix = 0; // Invalide
+    }
 
     if (choix == 1) {
         if (joueur->ferraille >= 10) {
             joueur->ferraille -= 10;
             joueur->carburant += 2;
-            printf(COLOR_GREEN "Transaction réussie." COLOR_RESET "\n");
+            printf(COLOR_GREEN "Transaction réussie. (+2 Carburant)" COLOR_RESET "\n");
         } else printf(COLOR_RED "Pas assez de ferraille !" COLOR_RESET "\n");
     } 
     else if (choix == 2) {
         if (joueur->ferraille >= 15) {
             joueur->ferraille -= 15;
             joueur->missiles += 3;
-            printf(COLOR_GREEN "Transaction réussie." COLOR_RESET "\n");
+            printf(COLOR_GREEN "Transaction réussie. (+3 Missiles)" COLOR_RESET "\n");
         } else printf(COLOR_RED "Pas assez de ferraille !" COLOR_RESET "\n");
+    }
+    else if (choix == 4) {
+        printf(COLOR_RED "\nVous armez vos canons. Le marchand panique sur la radio !\n" COLOR_RESET);
+        printf("\"Espèce de fou ! Vous allez le regretter !\"\n");
+        SLEEP_MS(1000);
+
+        // On génère un ennemi basé sur le niveau actuel
+        Vaisseau marchand = genererEnnemi(joueur->distanceParcourue, rand());
+        
+        // On personnalise l'ennemi pour qu'il ressemble à un marchand
+        strcpy(marchand.nom, "Transporteur Armé");
+        marchand.coqueMax += 5;       // Un marchand a souvent une grosse coque (soute)
+        marchand.coque = marchand.coqueMax;
+        marchand.moteurs = 1;         // Souvent lent et lourd
+        
+        // On lance le combat
+        lancerCombat(joueur, &marchand);
+        
+        // Note : Si le joueur gagne, 'lancerCombat' gère déjà le butin (ferraille/arme).
+        // Si le joueur fuit ou meurt, 'lancerCombat' gère aussi la suite.
+        return; // On quitte la fonction car le combat gère la fin de l'event
     }
     else {
         printf("Le marchand s'éloigne en maugréant.\n");
@@ -425,56 +486,223 @@ void evenementLoterie(Vaisseau *joueur) {
     printf("\n" COLOR_MAGENTA "🎰 [CASINO SPATIAL]" COLOR_RESET " Une station de divertissement scintille au loin.\n");
     printf("\"Approchez ! Tentez votre chance ! Doublez votre mise ou repartez les soutes vides !\"\n");
     
+    // Vérification argent minimum pour jouer
     if (joueur->ferraille < 10) {
         printf("\nLe videur vous regarde de haut : \"Revenez quand vous aurez au moins 10 Ferrailles.\"\n");
-        return;
+    } else {
+        printf("\n1. Parier 10 Ferrailles (Gain : x2)\n");
+        printf("2. Parier 50 Ferrailles (Gain : x3 - Difficile)\n");
     }
-
-    printf("\n1. Parier 10 Ferrailles (Gain : x2)\n");
-    printf("2. Parier 50 Ferrailles (Gain : x3 - Difficile)\n");
+    
     printf("3. Passer votre chemin\n");
+    
+    // --- NOUVELLE OPTION BRAQUAGE ---
+    printf(COLOR_RED "4. BRAQUER LE CASINO (Suicidaire - 3 Vagues d'ennemis)\n" COLOR_RESET);
+    
     printf(COLOR_YELLOW "> " COLOR_RESET);
 
     int choix;
-    scanf("%d", &choix);
+    // Sécurisation basique
+    if (scanf("%d", &choix) != 1) {
+        int c; while ((c = getchar()) != '\n' && c != EOF);
+        choix = 3;
+    }
 
-    if (choix == 1) {
+    // --- LOGIQUE DES PARIS (Inchangée) ---
+    if (choix == 1 && joueur->ferraille >= 10) {
         joueur->ferraille -= 10;
         printf("\nLancement de la machine");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
-
         unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 660);
         srand(seedUnique);
-        int r = rand() % 100;
-
-        if (r < 45) { // 45% de chance de gagner
+        if (rand() % 100 < 45) { 
             printf(COLOR_GREEN " GAGNÉ ! +20 Ferrailles !" COLOR_RESET "\n");
             joueur->ferraille += 20;
         } else {
             printf(COLOR_RED " PERDU... La machine encaisse vos jetons." COLOR_RESET "\n");
         }
     } 
-    else if (choix == 2) {
-        if (joueur->ferraille < 50) {
-            printf(COLOR_RED "Vous n'avez pas assez pour cette table !\n" COLOR_RESET);
-            return;
-        }
+    else if (choix == 2 && joueur->ferraille >= 50) {
         joueur->ferraille -= 50;
         printf("\nLa roue de la fortune tourne");
         for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(700); }
-
         unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * 661);
         srand(seedUnique);
-        int r = rand() % 100;
-
-        if (r < 25) { // 25% de chance seulement (Gros lot)
+        if (rand() % 100 < 25) { 
             printf(COLOR_YELLOW " JACKPOT !!! +150 Ferrailles !" COLOR_RESET "\n");
             joueur->ferraille += 150;
         } else {
             printf(COLOR_RED " RIEN... Le casino gagne toujours à la fin." COLOR_RESET "\n");
         }
-    } else {
+    } 
+    
+    // --- LOGIQUE DU BRAQUAGE ---
+    else if (choix == 4) {
+        printf(COLOR_RED "\n[ALARME] VOUS ACTIVEZ VOS ARMES ! TOUTE LA STATION PASSE EN ALERTE ROUGE !" COLOR_RESET "\n");
+        SLEEP_MS(1000);
+        
+        // --- VAGUE 1 : SÉCURITÉ DE BASE ---
+        printf(COLOR_YELLOW "\n--- VAGUE 1/3 : DRONE DE SÉCURITÉ ---\n" COLOR_RESET);
+        Vaisseau drone = genererEnnemi(joueur->distanceParcourue, rand());
+        strcpy(drone.nom, "Drone Sécurité Mk1");
+        drone.coqueMax = 10; 
+        drone.coque = 10;
+        // On rend le combat inévitable (pas de fuite ennemie facile)
+        lancerCombat(joueur, &drone);
+
+        if (joueur->coque <= 0) return; // Si mort, on arrête tout
+
+        // --- VAGUE 2 : GARDE D'ÉLITE ---
+        printf(COLOR_YELLOW "\n--- VAGUE 2/3 : GARDE D'ÉLITE ---\n" COLOR_RESET);
+        SLEEP_MS(1000);
+        printf("Les portes blindées s'ouvrent, un vaisseau lourd sort du hangar !\n");
+        
+        Vaisseau garde = genererEnnemi(joueur->distanceParcourue + 2, rand()); // +2 niv difficulté
+        strcpy(garde.nom, "Croiseur Blindé Casino");
+        garde.coqueMax += 10;
+        garde.coque = garde.coqueMax;
+        // On booste son arme
+        garde.systemeArme.efficacite += 1;
+        
+        lancerCombat(joueur, &garde);
+
+        if (joueur->coque <= 0) return;
+
+        // --- VAGUE 3 : LE BOSS DU CASINO ---
+        printf(COLOR_RED "\n--- VAGUE 3/3 : LE VAISSEAU DU GÉRANT ---\n" COLOR_RESET);
+        SLEEP_MS(1000);
+        printf("\"Vous m'avez coûté une fortune ! Vous allez le payer de votre sang !\"\n");
+
+        Vaisseau boss = genererEnnemi(joueur->distanceParcourue + 5, rand()); // +5 niv difficulté
+        strcpy(boss.nom, "Yacht de Luxe Armé");
+        boss.coqueMax = 40;
+        boss.coque = 40;
+        boss.systemeBouclier.efficacite += 1; // Gros bouclier
+        
+        lancerCombat(joueur, &boss);
+
+        if (joueur->coque <= 0) return;
+
+        // --- VICTOIRE TOTALE ---
+        printf(COLOR_YELLOW "\n============================================\n");
+        printf("       BRAQUAGE RÉUSSI ! LE CASINO EST À VOUS       \n");
+        printf("============================================" COLOR_RESET "\n");
+        SLEEP_MS(1000);
+        
+        int butinScrap = 200 + (rand() % 100);
+        int butinFuel = 5 + (rand() % 5);
+        int butinMissile = 5 + (rand() % 5);
+        
+        printf("Vous forcez le coffre principal...\n");
+        printf(COLOR_GREEN "+%d Ferrailles\n", butinScrap);
+        printf("+%d Carburant\n", butinFuel);
+        printf("+%d Missiles\n" COLOR_RESET, butinMissile);
+
+        joueur->ferraille += butinScrap;
+        joueur->carburant += butinFuel;
+        joueur->missiles += butinMissile;
+        
+        // Petit bonus : Réparation partielle grâce aux stations de maintenance du casino
+        printf("\nVous utilisez les docks du casino pour effectuer des réparations d'urgence (+10 Coque).\n");
+        joueur->coque += 10;
+        if(joueur->coque > joueur->coqueMax) joueur->coque = joueur->coqueMax;
+    }
+    
+    else if (choix != 1 && choix != 2) {
         printf("Vous gardez votre argent pour des réparations plus urgentes.\n");
+    }
+
+    finaliserEvenement(joueur);
+    attendreJoueur();
+}
+
+void evenementPeagePirate(Vaisseau *joueur) {
+    printf("\n" COLOR_RED "[ALERTE PROXIMITE]" COLOR_RESET " Un croiseur pirate active ses armes.\n");
+    printf(COLOR_YELLOW "\"Hé toi ! C'est notre territoire. Paye la taxe ou deviens une épave.\"\n" COLOR_RESET);
+    printf("Demande : 15 Ferrailles.\n");
+
+    printf("\n1. Payer 15 Ferrailles (Éviter le combat)\n");
+    printf("2. Refuser et engager le combat !\n");
+
+    // OPTION BLEUE : ARME PUISSANTE
+    if (joueur->systemeArme.rang >= 3) {
+        printf(COLOR_RED "3. [ARME LVL 3] Tirer un coup de semonce (Intimidation)\n" COLOR_RESET);
+    }
+
+    printf(COLOR_YELLOW "> " COLOR_RESET);
+    int choix;
+    scanf("%d", &choix);
+
+    if (choix == 1) {
+        if (joueur->ferraille >= 15) {
+            joueur->ferraille -= 15;
+            printf(COLOR_CYAN "\"Sage décision. Filez avant qu'on change d'avis.\"\n" COLOR_RESET);
+            finaliserEvenement(joueur);
+            attendreJoueur();
+        } else {
+            printf(COLOR_RED "\"Tu te moques de moi ?! T'as même pas de quoi payer ! A L'ATTAQUE !\"\n" COLOR_RESET);
+            SLEEP_MS(1000);
+            // On lance le combat car pas assez d'argent
+            Vaisseau pirate = genererEnnemi(joueur->distanceParcourue, rand());
+            lancerCombat(joueur, &pirate);
+        }
+    }
+    else if (choix == 3 && joueur->systemeArme.rang >= 3) {
+        printf("\nVous chargez votre %s au maximum et viserez leur pont.\n", joueur->systemeArme.nom);
+        SLEEP_MS(800);
+        printf(COLOR_GREEN "\"Wow wow ! Calmez-vous ! On savait pas que vous étiez équipés comme ça...\"\n" COLOR_RESET);
+        printf("Les pirates s'enfuient en laissant une caisse de ravitaillement (+2 Missiles).\n");
+        joueur->missiles += 2;
+        finaliserEvenement(joueur);
+        attendreJoueur();
+    }
+    else {
+        printf(COLOR_RED "\n\"A L'ABORDAGE !\"\n" COLOR_RESET);
+        SLEEP_MS(800);
+        Vaisseau pirate = genererEnnemi(joueur->distanceParcourue, rand());
+        // On booste un peu le pirate car c'est un événement de "boss" mineur
+        pirate.coque += 5; 
+        lancerCombat(joueur, &pirate);
+    }
+}
+
+void evenementErmite(Vaisseau *joueur) {
+    printf("\n" COLOR_MAGENTA "[RENCONTRE]" COLOR_RESET " Une station solitaire flotte dans le vide.\n");
+    printf("Un vieil homme vous contacte : \"Je peux améliorer ton tas de ferraille... ou le détruire. Hahaha !\"\n");
+    
+    printf("\n1. Laisser l'ermite bricoler vos moteurs (Risqué)\n");
+    printf("2. Lui demander de renforcer la coque (Coût: 10 Ferrailles)\n");
+    printf("3. Partir sans rien dire\n");
+    
+    printf(COLOR_YELLOW "> " COLOR_RESET);
+    int choix;
+    scanf("%d", &choix);
+
+    if (choix == 1) {
+        int r = rand() % 100;
+        printf("\nIl tape sur votre moteur avec une clé à molette géante...\n");
+        SLEEP_MS(1000);
+        
+        if (r < 50) {
+            joueur->moteurs += 1;
+            printf(COLOR_GREEN "INCROYABLE ! Vos moteurs ronronnent comme jamais. (+1 Moteurs)\n" COLOR_RESET);
+        } else {
+            joueur->coque -= 5;
+            printf(COLOR_RED "OUPS ! Il a percé le réservoir de refroidissement. (-5 Coque)\n" COLOR_RESET);
+        }
+    }
+    else if (choix == 2) {
+        if (joueur->ferraille >= 10) {
+            joueur->ferraille -= 10;
+            joueur->coqueMax += 5;
+            joueur->coque += 5;
+            printf(COLOR_GREEN "\nIl soude des plaques de métal étrange sur votre vaisseau. (+5 Coque Max)\n" COLOR_RESET);
+        } else {
+            printf("\n\"Pas d'argent, pas de métal !\"\n");
+        }
+    }
+    else {
+        printf("\n\"Les jeunes... toujours pressés.\"\n");
     }
 
     finaliserEvenement(joueur);
