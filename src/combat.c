@@ -119,6 +119,7 @@ void lancerCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
     int choixAction, choixArme, choixCible;
     int tourFini = 0; 
+    int estBossFinal = (strcmp(ennemi->nom, "DESTROYEUR STELLAIRE") == 0);
 
     // GESTION DES DEBUFFS JOUEUR (Reset début de tour)
     if (joueur->debuffMoteur > 0) joueur->debuffMoteur--;
@@ -280,6 +281,12 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
             SLEEP_MS(1000);
             tourFini = 1; // Le tour est fini, on ne peut plus attaquer
         }
+        if (choixAction == 3 && estBossFinal) {
+            printf(COLOR_RED "\n[ERREUR] Le vaisseau mère génère un champ inhibiteur ! Saut FTL impossible !\n" COLOR_RESET);
+            printf("Il n'y a pas d'issue, Commandant. C'est eux ou nous.\n");
+            SLEEP_MS(2000);
+            continue; // On relance la boucle sans passer le tour
+        }
         else if (choixAction == 3) {
             joueur->chargeFTL++;
             printf(COLOR_YELLOW "\nChargement FTL...\n" COLOR_RESET);
@@ -304,18 +311,15 @@ void tourCombat(Vaisseau *joueur, Vaisseau *ennemi) {
 
         int esquiveJoueur = 10 + (joueur->moteurs * 5);
         
-        if (ennemi->coque < (ennemi->coqueMax * 0.3) && ennemi->debuffMoteur == 0) {
+        if (ennemi->coque < (ennemi->coqueMax * 0.3) && !estBossFinal && ennemi->debuffMoteur == 0) {
              ennemi->chargeFTL++;
              printf(COLOR_RED "\n[ALERTE] L'ennemi charge son FTL pour fuir !\n" COLOR_RESET);
              if (ennemi->chargeFTL >= ennemi->maxchargeFTL) {
-                 printf("L'ennemi s'est enfui !\n");
-                 ennemi->coque = 0;
-                 return;
+                 ennemi->coque = 0; return;
              }
-             // S'il charge, il ne tire pas
              goto fin_tour_ennemi;
         }
-
+        
         if (checkEsquive(esquiveJoueur, joueur)) {
             printf(COLOR_GREEN "\nESQUIVE ! Vous évitez le tir.\n" COLOR_RESET);
         } else {
