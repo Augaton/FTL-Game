@@ -75,6 +75,10 @@ void menuVoyage(Vaisseau *joueur) {
             continuerMenu = 0;
 
         } 
+
+        else if (choix == 99) {
+            ouvrirMenuDebug(joueur);
+        }
     }
 }
 
@@ -536,8 +540,7 @@ void evenementLoterie(Vaisseau *joueur) {
         }
     } 
     
-    // --- LOGIQUE DU BRAQUAGE ---
-    else if (choix == 4) {
+if (choix == 4) {
         printf(COLOR_RED "\n[ALARME] VOUS ACTIVEZ VOS ARMES ! TOUTE LA STATION PASSE EN ALERTE ROUGE !" COLOR_RESET "\n");
         SLEEP_MS(1000);
         
@@ -547,41 +550,65 @@ void evenementLoterie(Vaisseau *joueur) {
         strcpy(drone.nom, "Drone Sécurité Mk1");
         drone.coqueMax = 10; 
         drone.coque = 10;
-        // On rend le combat inévitable (pas de fuite ennemie facile)
+        
         lancerCombat(joueur, &drone);
 
-        if (joueur->coque <= 0) return; // Si mort, on arrête tout
+        // VERIFICATION VAGUE 1
+        if (joueur->coque <= 0) return; // Tu es mort
+
+        // Si le FTL est chargé au max, c'est que tu as fui le combat
+        if (joueur->chargeFTL >= joueur->maxchargeFTL) {
+            printf(COLOR_YELLOW "\nVous avez pris la fuite ! Le braquage est annulé.\n" COLOR_RESET);
+            joueur->chargeFTL = 0;      // IMPORTANT : On vide la charge
+            finaliserEvenement(joueur); 
+            return;
+        }
 
         // --- VAGUE 2 : GARDE D'ÉLITE ---
         printf(COLOR_YELLOW "\n--- VAGUE 2/3 : GARDE D'ÉLITE ---\n" COLOR_RESET);
         SLEEP_MS(1000);
         printf("Les portes blindées s'ouvrent, un vaisseau lourd sort du hangar !\n");
         
-        Vaisseau garde = genererEnnemi(joueur->distanceParcourue + 2, rand()); // +2 niv difficulté
+        Vaisseau garde = genererEnnemi(joueur->distanceParcourue + 2, rand()); 
         strcpy(garde.nom, "Croiseur Blindé Casino");
         garde.coqueMax += 10;
         garde.coque = garde.coqueMax;
-        // On booste son arme
         garde.systemeArme.efficacite += 1;
         
         lancerCombat(joueur, &garde);
 
+        // VERIFICATION VAGUE 2
         if (joueur->coque <= 0) return;
+
+        if (joueur->chargeFTL >= joueur->maxchargeFTL) {
+            printf(COLOR_YELLOW "\nVous abandonnez le butin et fuyez vers l'hyper-espace !\n" COLOR_RESET);
+            joueur->chargeFTL = 0;
+            finaliserEvenement(joueur);
+            return;
+        }
 
         // --- VAGUE 3 : LE BOSS DU CASINO ---
         printf(COLOR_RED "\n--- VAGUE 3/3 : LE VAISSEAU DU GÉRANT ---\n" COLOR_RESET);
         SLEEP_MS(1000);
         printf("\"Vous m'avez coûté une fortune ! Vous allez le payer de votre sang !\"\n");
 
-        Vaisseau boss = genererEnnemi(joueur->distanceParcourue + 5, rand()); // +5 niv difficulté
+        Vaisseau boss = genererEnnemi(joueur->distanceParcourue + 5, rand());
         strcpy(boss.nom, "Yacht de Luxe Armé");
         boss.coqueMax = 40;
         boss.coque = 40;
-        boss.systemeBouclier.efficacite += 1; // Gros bouclier
+        boss.systemeBouclier.efficacite += 1;
         
         lancerCombat(joueur, &boss);
 
+        // VERIFICATION VAGUE 3
         if (joueur->coque <= 0) return;
+
+        if (joueur->chargeFTL >= joueur->maxchargeFTL) {
+            printf(COLOR_YELLOW "\nSi près du but... Mais la vie est plus importante. Vous fuyez.\n" COLOR_RESET);
+            joueur->chargeFTL = 0;
+            finaliserEvenement(joueur);
+            return;
+        }
 
         // --- VICTOIRE TOTALE ---
         printf(COLOR_YELLOW "\n============================================\n");
@@ -602,7 +629,6 @@ void evenementLoterie(Vaisseau *joueur) {
         joueur->carburant += butinFuel;
         joueur->missiles += butinMissile;
         
-        // Petit bonus : Réparation partielle grâce aux stations de maintenance du casino
         printf("\nVous utilisez les docks du casino pour effectuer des réparations d'urgence (+10 Coque).\n");
         joueur->coque += 10;
         if(joueur->coque > joueur->coqueMax) joueur->coque = joueur->coqueMax;
@@ -707,4 +733,84 @@ void evenementErmite(Vaisseau *joueur) {
 
     finaliserEvenement(joueur);
     attendreJoueur();
+}
+
+// Debug Menu
+
+void ouvrirMenuDebug(Vaisseau *joueur) {
+    int choixDebug = 0;
+    
+    while (choixDebug != 9) {
+        effacerEcran();
+        printf(COLOR_RED "╔══════════════════════════════════════════════════╗\n");
+        printf("║ 🛠️  MENU DEBUG / GOD MODE                       ║\n");
+        printf("╚══════════════════════════════════════════════════╝" COLOR_RESET "\n");
+        
+        printf(COLOR_GREEN " --- RESSOURCES ---" COLOR_RESET "\n");
+        printf(" 1. Soin Total + Carburant Max + Missiles Max\n");
+        printf(" 2. +1000 Ferrailles\n");
+        printf(" 3. Boost Equipement (Arme/Bouclier/Moteur Max)\n");
+
+        printf(COLOR_CYAN "\n --- EVENEMENTS ---" COLOR_RESET "\n");
+        printf(" 4. Lancer Casino (Pour tester le braquage)\n");
+        printf(" 5. Lancer Marchand (Pour tester l'attaque)\n");
+        printf(" 6. Lancer Pluie d'Astéroides\n");
+        printf(" 7. Lancer L'Ermite Fou\n");
+
+        printf(COLOR_RED "\n --- COMBAT ---" COLOR_RESET "\n");
+        printf(" 8. Spawner le BOSS FINAL (Test Suicide)\n");
+        
+        printf("\n 9. [QUITTER DEBUG]\n");
+        printf(COLOR_YELLOW " DEBUG > " COLOR_RESET);
+        
+        scanf("%d", &choixDebug);
+
+        if (choixDebug == 1) {
+            joueur->coque = joueur->coqueMax;
+            joueur->carburant = 20;
+            joueur->missiles = 20;
+            printf("Stats restaurées.\n");
+        }
+        else if (choixDebug == 2) {
+            joueur->ferraille += 1000;
+            printf("Porte-monnaie rempli !\n");
+        }
+        else if (choixDebug == 3) {
+            joueur->systemeArme.rang = 5;
+            joueur->systemeArme.efficacite = 10;
+            strcpy(joueur->systemeArme.nom, "LASER DE LA MORT");
+            
+            joueur->systemeBouclier.rang = 5;
+            joueur->systemeBouclier.efficacite = 5;
+            joueur->bouclierActuel = 5;
+            
+            joueur->moteurs = 5;
+            printf("Vaisseau en mode GOD TIER.\n");
+        }
+        else if (choixDebug == 4) {
+            evenementLoterie(joueur);
+        }
+        else if (choixDebug == 5) {
+            evenementMarchandAmbulant(joueur);
+        }
+        else if (choixDebug == 6) {
+            evenementPluieAsteroides(joueur);
+        }
+        else if (choixDebug == 7) {
+            evenementErmite(joueur);
+        }
+        else if (choixDebug == 8) {
+            printf(COLOR_RED "INVOCATION DU BOSS...\n" COLOR_RESET);
+            SLEEP_MS(1000);
+            Vaisseau boss = genererBossFinal();
+            lancerCombat(joueur, &boss);
+            // Si on gagne, on reset le flag ennemi pour éviter les bugs
+            joueur->ennemiPresent = 0;
+        }
+
+        if (choixDebug != 9) {
+            SLEEP_MS(500);
+            attendreJoueur();
+        }
+    }
 }

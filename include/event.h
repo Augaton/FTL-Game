@@ -22,5 +22,8 @@ void evenementLoterie(Vaisseau *joueur);
 void evenementPeagePirate(Vaisseau *joueur);
 void evenementErmite(Vaisseau *joueur);
 
+// ... autres prototypes ...
+void ouvrirMenuDebug(Vaisseau *joueur);
+
 
 #endif
