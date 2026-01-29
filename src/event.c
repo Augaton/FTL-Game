@@ -220,7 +220,7 @@ void explorerSecteurActuel(Vaisseau *joueur) {
         printf("\n--- PROTOCOLE D'URGENCE ---\n");
         printf("Voulez-vous lancer un S.O.S général ?\n");
         printf(COLOR_YELLOW "⚠ Attention : Cela attire autant les pirates que les marchands.\n" COLOR_RESET);
-        printf("1. Lancer le signal (50% Combat / 50% Aide)\n");
+        printf("1. Lancer le signal (50%% Combat / 50%% Aide)\n");
         printf("2. Ne rien faire (Rester bloqué)\n> ");
         
         int r;
