@@ -58,8 +58,15 @@ typedef struct {
     int chargeFTL;
     int maxchargeFTL;
 
+
+    // Équipage
     Membre equipage[3]; 
     int nbMembres;      // Combien de slots sont occupés
+
+    // Patrouille secteur
+    int explorationActuelle; // Combien de fois on a déjà exploré
+    int explorationMax;      // Combien de choses il y a à trouver ici
+    
 } Vaisseau;
 
 void menuEtatVaisseau(Vaisseau *v);

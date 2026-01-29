@@ -71,7 +71,18 @@ void menuVoyage(Vaisseau *joueur) {
         printf("\n" COLOR_CYAN "  [ ORDRES DE MISSION ]" COLOR_RESET "\n");
         printf(COLOR_BOLD "  1." COLOR_RESET " ENGAGER LE SAUT SPATIAL " COLOR_YELLOW "( -1 ⚡ )" COLOR_RESET "\n");
         // OPTION D'EXPLORATION LOCALE
-        printf(COLOR_BOLD "  2." COLOR_RESET " EXPLORER LE SECTEUR ACTUEL " COLOR_YELLOW "( -1 ⚡ )" COLOR_RESET "\n");
+        char *colExplo = (joueur->explorationActuelle < joueur->explorationMax) ? COLOR_YELLOW : COLOR_BLACK;
+        char statusExplo[30];
+        
+        if (joueur->explorationActuelle < joueur->explorationMax) {
+            sprintf(statusExplo, "( -1 ⚡ | %d/%d )", joueur->explorationActuelle, joueur->explorationMax);
+        } else {
+            sprintf(statusExplo, "( VIDE )");
+        }
+
+        printf(COLOR_BOLD "  2." COLOR_RESET " EXPLORER LE SECTEUR ACTUEL %s%s" COLOR_RESET "\n", colExplo, statusExplo);
+        
+
         printf(COLOR_BOLD "  3." COLOR_RESET " GÉRER LE VAISSEAU / INVENTAIRE\n");
         printf(COLOR_BOLD "  4." COLOR_RESET " ABANDONNER LA MISSION\n");
         
@@ -94,7 +105,6 @@ void menuVoyage(Vaisseau *joueur) {
              }
         }
         else if (choix == 2) {
-            // APPEL DE LA NOUVELLE FONCTION
             explorerSecteurActuel(joueur);
         }
         else if (choix == 3) {
@@ -157,6 +167,7 @@ void lancerSequenceDeSaut(Vaisseau *joueur) {
     // --- MISE À JOUR DU SECTEUR POUR LA SAUVEGARDE ---
     strncpy(joueur->secteurActuel, destination, 49);
     joueur->secteurActuel[49] = '\0'; 
+    joueur->explorationActuelle = 0;
 
     // --- CONSOMMATION DE CARBURANT ---
     // (Note : J'ai gardé ta logique, mais attention : si le joueur n'a pas de fuel
@@ -185,6 +196,7 @@ void lancerSequenceDeSaut(Vaisseau *joueur) {
     executerEvenement(joueur, joueur->secteurActuel);
 
     // Retour au repos après l'événement
+    joueur->explorationMax = 2 + (rand() % 3);
     strcpy(joueur->secteurActuel, "REPOS");
     sauvegarderPartie(joueur);
 }
@@ -198,60 +210,92 @@ const char* inspecterBalise() {
     return "Secteur Vide";
 }
 
+
 void explorerSecteurActuel(Vaisseau *joueur) {
-    // 1. Coût en carburant (pour éviter le farming infini gratuit)
     if (joueur->carburant < 1) {
-        printf(COLOR_RED "\n[ERREUR] Carburant insuffisant pour les manœuvres locales !\n" COLOR_RESET);
-        printf("Vous dérivez dans le vide...\n");
+        printf(COLOR_RED "\n[ALERTE CRITIQUE] RÉSERVOIRS VIDES !\n" COLOR_RESET);
+        printf("Moteurs inactifs. Impossible d'explorer ou de sauter.\n");
         SLEEP_MS(1000);
         
-        // Option de la dernière chance si 0 fuel : Appel de détresse (dangereux)
-        printf("Voulez-vous lancer un S.O.S général ? (1. Oui / 2. Non) > ");
+        printf("\n--- PROTOCOLE D'URGENCE ---\n");
+        printf("Voulez-vous lancer un S.O.S général ?\n");
+        printf(COLOR_YELLOW "⚠ Attention : Cela attire autant les pirates que les marchands.\n" COLOR_RESET);
+        printf("1. Lancer le signal (50% Combat / 50% Aide)\n");
+        printf("2. Ne rien faire (Rester bloqué)\n> ");
+        
         int r;
-        scanf("%d", &r);
+        if(scanf("%d", &r) != 1) {
+            int c; while ((c = getchar()) != '\n' && c != EOF);
+            r = 2;
+        }
+        
         if (r == 1) {
-            printf("S.O.S envoyé...\n");
-            SLEEP_MS(1000);
-            // 50% chance combat, 50% chance marchand
-            if (rand()%2 == 0) {
-                printf(COLOR_RED "Un pirate a capté votre signal !\n" COLOR_RESET);
+            printf("Transmission du signal de détresse sur toutes les bandes...\n");
+            for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(600); }
+            printf("\n");
+
+            srand(time(NULL)); // Aléatoire pur pour le SOS
+            
+            if (rand() % 2 == 0) {
+                printf(COLOR_RED "[DANGER] Signature hostile détectée ! Des pirates ont triangulé votre position !\n" COLOR_RESET);
+                SLEEP_MS(1500);
                 Vaisseau pirate = genererEnnemi(joueur->distanceParcourue, rand());
+                // On s'assure que le pirate ne fuit pas trop vite, on veut son fuel
                 lancerCombat(joueur, &pirate);
             } else {
+                printf(COLOR_GREEN "[SUCCÈS] Un cargo commercial a capté votre appel !\n" COLOR_RESET);
+                SLEEP_MS(1000);
                 evenementMarchandAmbulant(joueur);
             }
         }
+        // On quitte la fonction ici. Le SOS ne consomme pas de "slot d'exploration".
         return;
     }
 
-    // Consommation
+    if (joueur->explorationActuelle >= joueur->explorationMax) {
+        printf(COLOR_RED "\n[SCANNER] Secteur entièrement cartographié.\n" COLOR_RESET);
+        printf("Il n'y a plus aucun signal actif dans cette zone.\n");
+        printf("Vous devez sauter vers le secteur suivant.\n");
+        SLEEP_MS(1500);
+        return;
+    }
+
+    // 3. Consommation & Incrémentation
     joueur->carburant--;
-    printf(COLOR_YELLOW "\nExploration des environs en cours (-1 ⚡)...\n" COLOR_RESET);
+    joueur->explorationActuelle++; // On utilise une charge d'exploration !
+
+    printf(COLOR_YELLOW "\nExploration des environs (-1 ⚡)... [Signal %d/%d]\n" COLOR_RESET, 
+           joueur->explorationActuelle, joueur->explorationMax);
+    
     for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
     printf("\n");
 
+    // 4. Tirage aléatoire (Pondéré - Option B recommandée)
     srand(time(NULL)); 
-    int r = rand() % 100;
+    int jet = rand() % 100;
 
-    // --- CAS 1 : CALME (30%) ---
-    if (r < 30) {
-        descriptionSecteurVide(joueur);
-    }
-    // --- CAS 2 : COMBAT (40%) ---
-    else if (r < 70) {
-        printf(COLOR_RED "[ALERTE] Patrouille hostile repérée lors des manœuvres !\n" COLOR_RESET);
+    // Logique de distribution des événements
+    // Note : Plus on explore, plus le risque de combat augmente légèrement ?
+    // Ici on reste simple :
+    
+    // 35% : Combat (Risque du farming)
+    if (jet < 35) {
+        printf(COLOR_RED "[ALERTE] Patrouille hostile repérée !\n" COLOR_RESET);
         SLEEP_MS(800);
         Vaisseau ennemi = genererEnnemi(joueur->distanceParcourue, rand());
         lancerCombat(joueur, &ennemi);
     }
-    // --- CAS 3 : ÉVÉNEMENT ALÉATOIRE (30%) ---
+    // 25% : Calme / Ambiance
+    else if (jet < 60) {
+        descriptionSecteurVide(joueur);
+    }
+    // 40% : Événement spécial (Loot, Marchand, etc.)
     else {
-        // On appelle lancerEvenementAleatoire qui contient tout 
-        // (Mercenaire, Loterie, Astéroïdes...) SAUF 'ouvrirMagasin'.
-        // Note : evenementMarchandAmbulant est inclus, mais ce n'est pas le "Shop" complet, 
-        // c'est juste un petit échange, donc c'est acceptable.
         lancerEvenementAleatoire(joueur);
     }
+
+    sauvegarderPartie(joueur);
+    attendreJoueur();
 }
 
 void descriptionSecteurVide(Vaisseau *joueur) {

@@ -131,6 +131,9 @@ void initialiserNouvellePartie(Vaisseau *joueur) {
         joueur->seedSecteur = (unsigned int)time(NULL) + strlen(joueur->nom);
     }
 
+    joueur->explorationActuelle = 0;
+    joueur->explorationMax = 3; // Le premier secteur a 3 points d'intérêt
+
     printf(COLOR_GREEN "\n>>> SYSTÈMES INITIALISÉS. SEED: %u <<<\n" COLOR_RESET, joueur->seedSecteur);
     SLEEP_MS(1000);
 
