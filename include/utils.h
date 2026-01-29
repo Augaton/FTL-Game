@@ -27,6 +27,7 @@ void effacerEcran();
 void afficherGameOver(Vaisseau *joueur);
 void afficherVictoire(Vaisseau *joueur);
 void attendreJoueur();
+void afficherDestinationColoree(const char* destination);
 
 void sauvegarderPartie(Vaisseau *joueur);
 int chargerPartie(Vaisseau *joueur);

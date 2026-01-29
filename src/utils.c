@@ -132,3 +132,14 @@ int lireEntierSecurise(int min, int max) {
         printf(COLOR_YELLOW "> " COLOR_RESET);
     }
 }
+
+// Petite fonction utilitaire pour l'affichage coloré
+void afficherDestinationColoree(const char* destination) {
+    if (strstr(destination, "Hostile")) printf(COLOR_RED);
+    else if (strstr(destination, "Station")) printf(COLOR_GREEN);
+    else if (strstr(destination, "Detresse")) printf(COLOR_YELLOW);
+    else if (strstr(destination, "Nebuleuse")) printf(COLOR_MAGENTA);
+    else printf(COLOR_CYAN);
+    
+    printf("%s" COLOR_RESET, destination);
+}

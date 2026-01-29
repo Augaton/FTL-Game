@@ -14,65 +14,46 @@ void menuVoyage(Vaisseau *joueur) {
         int choix = 0;
         effacerEcran();
         
-        // --- 1. EN-TÊTE ---
+        // --- EN-TÊTE ---
         printf(COLOR_CYAN "╔══════════════════════════════════════════════════════════╗\n");
         printf("║ " COLOR_BOLD "%-18s" COLOR_RESET COLOR_CYAN "CONSOLE DE NAVIGATION   SECTEUR: %02d/%d ║\n", 
                joueur->nom, joueur->distanceParcourue, joueur->distanceObjectif);
         printf("╠══════════════════════════════════════════════════════════╣" COLOR_RESET "\n");
 
-        // --- 2. STATUT DU VAISSEAU (Dynamique) ---
-        // On détermine la couleur et le message selon les PV restants
+        // --- STATUT COQUE ---
         char *couleurStatut;
         char *texteStatut;
         float ratioCoque = (float)joueur->coque / (float)joueur->coqueMax;
 
-        if (ratioCoque > 0.7) {
-            couleurStatut = COLOR_GREEN; texteStatut = "NOMINAL";
-        } else if (ratioCoque > 0.3) {
-            couleurStatut = COLOR_YELLOW; texteStatut = "ATTENTION";
-        } else {
-            couleurStatut = COLOR_RED; texteStatut = "CRITIQUE";
-        }
+        if (ratioCoque > 0.7) { couleurStatut = COLOR_GREEN; texteStatut = "NOMINAL"; } 
+        else if (ratioCoque > 0.3) { couleurStatut = COLOR_YELLOW; texteStatut = "ATTENTION"; } 
+        else { couleurStatut = COLOR_RED; texteStatut = "CRITIQUE"; }
 
-        // Affichage Ligne Coque + Statut Global
         printf(COLOR_CYAN "║ " COLOR_RESET "COQUE: ");
-        if (ratioCoque <= 0.3) printf(COLOR_RED); // Met les chiffres en rouge si danger
+        if (ratioCoque <= 0.3) printf(COLOR_RED);
         printf("%02d/%02d " COLOR_RESET, joueur->coque, joueur->coqueMax);
-        
-        // On remplit l'espace pour aligner le statut à droite
         printf("                       STATUT: %s%-12s" COLOR_CYAN " ║\n", couleurStatut, texteStatut);
 
-
-        // --- 3. GESTION DES BOUCLIERS ---
+        // --- BOUCLIERS ---
         printf(COLOR_CYAN "║ " COLOR_RESET "SHIELD: ");
         int nbBoucliersAffiches = 0;
         for(int i=0; i < joueur->systemeBouclier.efficacite; i++) {
             printf(i < joueur->bouclierActuel ? COLOR_CYAN "⬢ " : COLOR_RED "⬡ ");
             nbBoucliersAffiches++;
         }
-        
-        // Calcul précis du padding pour fermer la boite
-        // La ligne fait 58 chars de large (interne).
-        // "SHIELD: " = 9 chars. Chaque bouclier "x " = 2 chars.
-        int espaceOccupe = 9 + (nbBoucliersAffiches * 2);
-        int padding = 58 - espaceOccupe;
+        int padding = 58 - (9 + (nbBoucliersAffiches * 2));
         for(int i=0; i<padding; i++) printf(" ");
         printf(COLOR_CYAN "║\n");
 
-
-        // --- 4. RESSOURCES ---
+        // --- RESSOURCES ---
         printf("╠══════════════════════════════════════════════════════════╣\n");
         printf("║ " COLOR_YELLOW "⚡ " COLOR_RESET "CARBURANT: %-3d  " COLOR_YELLOW "⚓ " COLOR_RESET "FERRAILLE: %-4d  " COLOR_YELLOW "🚀 " COLOR_RESET "MISSILES: %-3d " COLOR_CYAN " ║\n", 
                 joueur->carburant, joueur->ferraille, joueur->missiles);
 
-
-        // --- 5. BARRE DE PROGRESSION (Alignement Fixe) ---
+        // --- BARRE PROGRESSION ---
         printf("╠══════════════════════════════════════════════════════════╣\n");
         printf("║ SAUT: [");
-        
-        // On dessine la barre
-        int tailleBarre = 39; // Taille fixe visuelle de la barre
-        // Calcul de la position du vaisseau dans cette barre fixe (produit en croix)
+        int tailleBarre = 39; 
         int posVaisseau = (joueur->distanceParcourue * tailleBarre) / joueur->distanceObjectif;
         if (posVaisseau >= tailleBarre) posVaisseau = tailleBarre - 1;
 
@@ -82,10 +63,6 @@ void menuVoyage(Vaisseau *joueur) {
             else printf(COLOR_RESET "·");
         }
         printf(COLOR_RESET "]");
-        
-        // Padding final pour fermer la boite
-        // "SAUT: [" (7 chars) + Barre (40 chars) + "]" (1 char) = 48 chars
-        // 58 - 48 = 10 espaces restants
         for(int i=0; i<10; i++) printf(" ");
         printf(COLOR_CYAN "║\n");
         printf("╚══════════════════════════════════════════════════════════╝" COLOR_RESET "\n");
@@ -93,8 +70,10 @@ void menuVoyage(Vaisseau *joueur) {
         // --- MENU ACTIONS ---
         printf("\n" COLOR_CYAN "  [ ORDRES DE MISSION ]" COLOR_RESET "\n");
         printf(COLOR_BOLD "  1." COLOR_RESET " ENGAGER LE SAUT SPATIAL " COLOR_YELLOW "( -1 ⚡ )" COLOR_RESET "\n");
-        printf(COLOR_BOLD "  2." COLOR_RESET " GÉRER LE VAISSEAU / INVENTAIRE\n");
-        printf(COLOR_BOLD "  3." COLOR_RESET " ABANDONNER LA MISSION\n");
+        // OPTION D'EXPLORATION LOCALE
+        printf(COLOR_BOLD "  2." COLOR_RESET " EXPLORER LE SECTEUR ACTUEL " COLOR_YELLOW "( -1 ⚡ )" COLOR_RESET "\n");
+        printf(COLOR_BOLD "  3." COLOR_RESET " GÉRER LE VAISSEAU / INVENTAIRE\n");
+        printf(COLOR_BOLD "  4." COLOR_RESET " ABANDONNER LA MISSION\n");
         
         printf("\n" COLOR_YELLOW " COMMANDE > " COLOR_RESET);
 
@@ -102,27 +81,27 @@ void menuVoyage(Vaisseau *joueur) {
             int c; while ((c = getchar()) != '\n' && c != EOF);
             continue;
         }
-        // Nettoyage buffer
         int c; while ((c = getchar()) != '\n' && c != EOF); 
 
-        // --- TRAITEMENT DES CHOIX ---
+        // --- TRAITEMENT ---
         if (choix == 1) {
              if (joueur->carburant > 0) {
                 lancerSequenceDeSaut(joueur); 
              } else {
-                 printf(COLOR_RED "\n[ERREUR] RÉSERVOIRS VIDES ! Impossible de passer en vitesse lumière.\n" COLOR_RESET);
-                 printf("Vous devez attendre un miracle ou un signal de détresse...\n");
-                 // Ici, tu pourrais implémenter une mécanique de "Wait" (Attendre) qui consomme de la nourriture/vie
-                 // Pour l'instant, on bloque juste.
+                 printf(COLOR_RED "\n[ERREUR] RÉSERVOIRS VIDES !\n" COLOR_RESET);
+                 printf("Vous pouvez tenter d'explorer le secteur local (Choix 2) pour trouver du fuel.\n");
                  SLEEP_MS(2000);
              }
         }
         else if (choix == 2) {
-            menuEtatVaisseau(joueur);
+            // APPEL DE LA NOUVELLE FONCTION
+            explorerSecteurActuel(joueur);
         }
         else if (choix == 3) {
-            // AJOUT D'UNE CONFIRMATION DE SÉCURITÉ
-            char confirm;
+            menuEtatVaisseau(joueur);
+        }
+        else if (choix == 4) {
+             char confirm;
             printf(COLOR_RED "\n[DANGER] Etes-vous sûr de vouloir autodétruire le vaisseau ? (o/n) > " COLOR_RESET);
             scanf("%c", &confirm);
             if (confirm == 'o' || confirm == 'O') {
@@ -134,7 +113,7 @@ void menuVoyage(Vaisseau *joueur) {
                 printf(COLOR_GREEN "Annulation. Retour au poste de pilotage.\n" COLOR_RESET);
                 SLEEP_MS(800);
             }
-        } 
+        }
         else if (choix == 99) {
             ouvrirMenuDebug(joueur);
         }
@@ -219,15 +198,60 @@ const char* inspecterBalise() {
     return "Secteur Vide";
 }
 
-// Petite fonction utilitaire pour l'affichage coloré
-void afficherDestinationColoree(const char* destination) {
-    if (strstr(destination, "Hostile")) printf(COLOR_RED);
-    else if (strstr(destination, "Station")) printf(COLOR_GREEN);
-    else if (strstr(destination, "Detresse")) printf(COLOR_YELLOW);
-    else if (strstr(destination, "Nebuleuse")) printf(COLOR_MAGENTA);
-    else printf(COLOR_CYAN);
-    
-    printf("%s" COLOR_RESET, destination);
+void explorerSecteurActuel(Vaisseau *joueur) {
+    // 1. Coût en carburant (pour éviter le farming infini gratuit)
+    if (joueur->carburant < 1) {
+        printf(COLOR_RED "\n[ERREUR] Carburant insuffisant pour les manœuvres locales !\n" COLOR_RESET);
+        printf("Vous dérivez dans le vide...\n");
+        SLEEP_MS(1000);
+        
+        // Option de la dernière chance si 0 fuel : Appel de détresse (dangereux)
+        printf("Voulez-vous lancer un S.O.S général ? (1. Oui / 2. Non) > ");
+        int r;
+        scanf("%d", &r);
+        if (r == 1) {
+            printf("S.O.S envoyé...\n");
+            SLEEP_MS(1000);
+            // 50% chance combat, 50% chance marchand
+            if (rand()%2 == 0) {
+                printf(COLOR_RED "Un pirate a capté votre signal !\n" COLOR_RESET);
+                Vaisseau pirate = genererEnnemi(joueur->distanceParcourue, rand());
+                lancerCombat(joueur, &pirate);
+            } else {
+                evenementMarchandAmbulant(joueur);
+            }
+        }
+        return;
+    }
+
+    // Consommation
+    joueur->carburant--;
+    printf(COLOR_YELLOW "\nExploration des environs en cours (-1 ⚡)...\n" COLOR_RESET);
+    for(int i=0; i<3; i++) { printf("."); fflush(stdout); SLEEP_MS(500); }
+    printf("\n");
+
+    srand(time(NULL)); 
+    int r = rand() % 100;
+
+    // --- CAS 1 : CALME (30%) ---
+    if (r < 30) {
+        descriptionSecteurVide(joueur);
+    }
+    // --- CAS 2 : COMBAT (40%) ---
+    else if (r < 70) {
+        printf(COLOR_RED "[ALERTE] Patrouille hostile repérée lors des manœuvres !\n" COLOR_RESET);
+        SLEEP_MS(800);
+        Vaisseau ennemi = genererEnnemi(joueur->distanceParcourue, rand());
+        lancerCombat(joueur, &ennemi);
+    }
+    // --- CAS 3 : ÉVÉNEMENT ALÉATOIRE (30%) ---
+    else {
+        // On appelle lancerEvenementAleatoire qui contient tout 
+        // (Mercenaire, Loterie, Astéroïdes...) SAUF 'ouvrirMagasin'.
+        // Note : evenementMarchandAmbulant est inclus, mais ce n'est pas le "Shop" complet, 
+        // c'est juste un petit échange, donc c'est acceptable.
+        lancerEvenementAleatoire(joueur);
+    }
 }
 
 void descriptionSecteurVide(Vaisseau *joueur) {
@@ -290,11 +314,20 @@ void executerEvenement(Vaisseau *joueur, const char* type) {
 }
 
 void lancerEvenementAleatoire(Vaisseau *joueur) {
-    // On fixe l'aléatoire sur la seed du secteur
-    unsigned int seedUnique = joueur->seedSecteur + (joueur->distanceParcourue * rand()%1000);
-    srand(seedUnique);
+    // --- 1. GÉNÉRATION DE LA GRAINE "CHAOTIQUE" ---
+    // On mélange :
+    // - Le temps réel (pour que ça change à chaque seconde)
+    // - L'adresse mémoire du joueur (pour varier selon la session)
+    // - La seed du secteur (pour garder une teinte unique)
+    unsigned int seedChaos = (unsigned int)time(NULL) ^ (unsigned long)joueur ^ (joueur->seedSecteur << 3);
+    srand(seedChaos);
 
-    int typeEv = rand() % 7; 
+    // Petit "chauffage" du générateur pour éviter les répétitions immédiates
+    rand(); rand();
+
+    // --- 2. CORRECTION DU MODULO ---
+    // Tu as 10 cas (0 à 9). Donc il faut modulo 10.
+    int typeEv = rand() % 10; 
 
     switch(typeEv) {
         case 0: evenementMarchandAmbulant(joueur); break;
@@ -309,10 +342,10 @@ void lancerEvenementAleatoire(Vaisseau *joueur) {
         case 9: evenementStationMercenaire(joueur); break;
     }
 
-    // Une fois l'événement choisi et traité, on remet le temps réel 
-    // pour que les futurs jets de dés (combat, etc.) ne soient pas prévisibles.
+    // Reset sur le temps pur pour la suite
     srand((unsigned int)time(NULL));
 }
+
 
 // LISTE DES ÉVÉNEMENTS
 

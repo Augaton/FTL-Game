@@ -7,8 +7,8 @@ void executerEvenement(Vaisseau *joueur, const char *destination);
 const char* inspecterBalise();
 void menuVoyage(Vaisseau *joueur);
 void lancerSequenceDeSaut(Vaisseau *joueur);
-void afficherDestinationColoree(const char* destination);
 void descriptionSecteurVide(Vaisseau *joueur);
+void explorerSecteurActuel(Vaisseau *joueur);
 
 void lancerEvenementAleatoire(Vaisseau *joueur);
 
